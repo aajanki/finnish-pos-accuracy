@@ -63,8 +63,11 @@ class Voikko():
                 lemmas.append(t_without_inflection)
 
                 if all(x in '.,?!:;()[]{}"”\'-+' for x in t):
-                    pos.append('PUNCT')
+                    tag = 'PUNCT'
+                elif t.isupper():
+                    tag = 'PROPN'
                 else:
-                    pos.append('NOUN') # guess
+                    tag = 'NOUN' # guess
+                pos.append(tag)
 
         return lemmas, pos
