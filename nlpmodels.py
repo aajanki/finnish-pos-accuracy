@@ -57,36 +57,49 @@ class Voikko():
         pos = []
         for t in tokens:
             analyzed = self.voikko.analyze(t)
-            if analyzed:
-                try:
-                    i = [x.get('BASEFORM', '_').lower() for x in analyzed].index(t.lower())
-                except ValueError:
-                    i = 0
-
-                baseform = analyzed[i].get('BASEFORM', t)
-                lemmas.append(baseform)
-
-                if baseform in ['olla', 'voida']:
-                    tag = 'AUX'
-                else:
-                    word_class = analyzed[i].get('CLASS', 'X')
-                    tag = self.tag_map[word_class]
-                pos.append(tag)
-            else:
-                t_without_inflection = inflection_postfix_re.sub(r'\1', t)
-                lemmas.append(t_without_inflection)
-
-                if all(x in '.,?!:;()[]{}"”\'-+…' for x in t):
-                    tag = 'PUNCT'
-                elif t.istitle() or t.isupper(): # Name or acronym
-                    tag = 'PROPN'
-                elif all(x.isdigit() or x.isspace() for x in t): # 50 000
-                    tag = 'NUM'
-                else:
-                    tag = 'NOUN' # guess
-                pos.append(tag)
+            lemmas.append(self.analyzed_to_lemma(analyzed, t))
+            pos.append(self.analyzed_to_pos_tag(analyzed, t))
 
         return lemmas, pos
+
+    def analyzed_to_lemma(self, analyzed, orig):
+        if analyzed:
+            lemma, _ = self._choose_baseform(analyzed, orig)
+        else:
+            lemma = inflection_postfix_re.sub(r'\1', orig)
+
+        return lemma
+
+    def analyzed_to_pos_tag(self, analyzed, orig):
+        if analyzed:
+            baseform, word_class = self._choose_baseform(analyzed, orig)
+            if baseform in ['olla', 'voida']:
+                tag = 'AUX'
+            else:
+                tag = self.tag_map[word_class]
+        else:
+            if all(x in '.,?!:;()[]{}"”\'-+…' for x in orig):
+                tag = 'PUNCT'
+            elif orig.istitle() or orig.isupper(): # Name or acronym
+                tag = 'PROPN'
+            elif all(x.isdigit() or x.isspace() for x in orig): # 50 000
+                tag = 'NUM'
+            else:
+                tag = 'NOUN' # guess
+
+        return tag
+
+    def _choose_baseform(self, analyzed, orig):
+        if not analyzed:
+            return (None, None)
+
+        try:
+            bases = [x.get('BASEFORM', '_').lower() for x in analyzed]
+            i = bases.index(orig.lower())
+        except ValueError:
+            i = 0
+
+        return (analyzed[i].get('BASEFORM', orig), analyzed[i].get('CLASS', 'X'))
 
 
 def process_spacy(nlp, text):
