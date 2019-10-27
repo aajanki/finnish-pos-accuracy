@@ -1,3 +1,5 @@
+import os
+import os.path
 import numpy as np
 from alignment.sequence import Sequence
 from alignment.vocabulary import Vocabulary
@@ -6,25 +8,39 @@ from models import *
 
 
 def main():
+    outputdir = 'errors'
     sentences = parse_conllu(open('data/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
+
+    os.makedirs(outputdir, exist_ok=True)
 
     print(f'Evaluating on {len(sentences)} sentences')
 
-    evaluated = [UDPipe(), Voikko()]
+    #evaluated = [UDPipe(), Voikko()]
+    evaluated = [Voikko()]
     for model in evaluated:
-        print(f'Evaluatin {model.name}')
-        
-        lemma_accuracy, pos_accuracy = evaluate_model(model, sentences)
+        print(f'Evaluating {model.name}')
 
-        print(f'Lemma accuracy: {lemma_accuracy}')
-        print(f'POS accuracy: {pos_accuracy}')
-        print()
+        le_filename = os.path.join(outputdir, f'lemma_erros_{model.name}.txt')
+        pe_filename = os.path.join(outputdir, f'pos_erros_{model.name}.txt')
+        with open(le_filename, 'w') as lemma_errors_file, \
+             open(pe_filename, 'w') as pos_errors_file:
+            lemma_accuracy, pos_accuracy, lemma_errors, pos_errors = \
+                evaluate_model(model, sentences)
+
+            print(f'Lemma accuracy: {lemma_accuracy}')
+            print(f'POS accuracy: {pos_accuracy}')
+            print()
+
+            write_errors(lemma_errors_file, lemma_errors)
+            write_errors(pos_errors_file, pos_errors)
 
 
 def evaluate_model(model, sentences):
     total_tokens = 0
     num_correct_lemmas = 0
     num_correct_pos = 0
+    lemma_errors = []
+    pos_errors = []
     for sent in sentences:
         sentence_len = len(sent['tokens'])
         total_tokens += sentence_len
@@ -33,16 +49,27 @@ def evaluate_model(model, sentences):
 
         expected_lemmas = sent['lemmas']
         n = compute_matches(observed_lemmas, expected_lemmas)
-        num_correct_lemmas += min(n, sentence_len)
+        correct_count = min(n, sentence_len)
+        num_correct_lemmas += correct_count
+
+        if total_tokens != correct_count:
+            lemma_errors.append((sent['tokens'], observed_lemmas, expected_lemmas))
 
         expected_pos = sent['pos']
         n = compute_matches(observed_pos, expected_pos)
-        num_correct_pos += min(n, sentence_len)
+        correct_count = min(n, sentence_len)
+        num_correct_pos += correct_count
+
+        if total_tokens != correct_count:
+            pos_errors.append((sent['tokens'], observed_pos, expected_pos))
 
     if total_tokens <= 0:
-        return (0.0, 0.0)
+        return (0.0, 0.0, lemma_errors, pos_errors)
     else:
-        return (num_correct_lemmas/total_tokens, num_correct_pos/total_tokens)
+        return (num_correct_lemmas/total_tokens,
+                num_correct_pos/total_tokens,
+                lemma_errors,
+                pos_errors)
 
 
 def parse_conllu(f):
@@ -92,6 +119,24 @@ def compute_matches(seq_a, seq_b):
         _, encodeds = aligner.align(encoded_a, encoded_b, backtrace=True)
 
         return (encodeds[0].first == encodeds[0].second).sum()
+
+
+def write_errors(f, errors):
+    for error in errors:
+        f.write('\t')
+        f.write(' '.join(error[0]))
+        f.write('\n')
+
+        f.write('obs\t')
+        f.write(' '.join(error[1]))
+        f.write('\n')
+
+        f.write('exp\t')
+        f.write(' '.join(error[2]))
+        f.write('\n')
+
+        f.write('-'*80)
+        f.write('\n')
 
 
 if __name__ == '__main__':

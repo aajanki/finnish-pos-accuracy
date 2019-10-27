@@ -1,3 +1,4 @@
 data/
 venv/
+errors/
 __pycache__
