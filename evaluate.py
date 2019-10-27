@@ -133,12 +133,12 @@ def write_errors(f, errors):
         f.write(' '.join(error[0]))
         f.write('\n')
 
-        f.write('obs\t')
-        f.write(' '.join(error[1]))
-        f.write('\n')
-
         f.write('exp\t')
         f.write(' '.join(error[2]))
+        f.write('\n')
+
+        f.write('obs\t')
+        f.write(' '.join(error[1]))
         f.write('\n')
 
         f.write('-'*80)
