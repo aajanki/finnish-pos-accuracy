@@ -54,7 +54,7 @@ def evaluate_model(model, sentences):
         correct_count = min(n, sentence_len)
         num_correct_lemmas += correct_count
 
-        if total_tokens != correct_count:
+        if sentence_len != correct_count:
             lemma_errors.append((sent['tokens'], observed_lemmas, expected_lemmas))
 
         expected_pos = sent['pos']
@@ -62,7 +62,7 @@ def evaluate_model(model, sentences):
         correct_count = min(n, sentence_len)
         num_correct_pos += correct_count
 
-        if total_tokens != correct_count:
+        if sentence_len != correct_count:
             pos_errors.append((sent['tokens'], observed_pos, expected_pos))
 
     if total_tokens <= 0:
