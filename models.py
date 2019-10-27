@@ -65,6 +65,6 @@ class Voikko():
                 if all(x in '.,?!:;()[]{}"”\'-+' for x in t):
                     pos.append('PUNCT')
                 else:
-                    pos.append('X')
+                    pos.append('NOUN') # guess
 
         return lemmas, pos
