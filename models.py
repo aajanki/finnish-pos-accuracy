@@ -47,7 +47,12 @@ class Voikko():
         for t in tokens:
             analyzed = self.voikko.analyze(t)
             if analyzed:
-                lemmas.append(analyzed[0].get('BASEFORM', t))
+                try:
+                    i = [x.get('BASEFORM', '_').lower() for x in analyzed].index(t.lower())
+                except ValueError:
+                    i = 0
+
+                lemmas.append(analyzed[i].get('BASEFORM', t))
                 tag = analyzed[0].get('CLASS', 'X')
                 pos.append(self.tag_map[tag])
             else:
