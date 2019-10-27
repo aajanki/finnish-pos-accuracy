@@ -72,6 +72,8 @@ class Voikko():
                     tag = 'PUNCT'
                 elif t.istitle() or t.isupper(): # Name or acronym
                     tag = 'PROPN'
+                elif all(x.isdigit() or x.isspace() for x in t): # 50 000
+                    tag = 'NUM'
                 else:
                     tag = 'NOUN' # guess
                 pos.append(tag)
