@@ -55,9 +55,15 @@ class Voikko():
                 except ValueError:
                     i = 0
 
-                lemmas.append(analyzed[i].get('BASEFORM', t))
-                tag = analyzed[i].get('CLASS', 'X')
-                pos.append(self.tag_map[tag])
+                baseform = analyzed[i].get('BASEFORM', t)
+                lemmas.append(baseform)
+
+                if baseform in ['olla', 'voida']:
+                    tag = 'AUX'
+                else:
+                    word_class = analyzed[i].get('CLASS', 'X')
+                    tag = self.tag_map[word_class]
+                pos.append(tag)
             else:
                 t_without_inflection = inflection_postfix_re.sub(r'\1', t)
                 lemmas.append(t_without_inflection)
