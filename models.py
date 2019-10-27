@@ -62,7 +62,7 @@ class Voikko():
                 t_without_inflection = inflection_postfix_re.sub(r'\1', t)
                 lemmas.append(t_without_inflection)
 
-                if all(x in '.,?!:;()[]{}"\'-+' for x in t):
+                if all(x in '.,?!:;()[]{}"”\'-+' for x in t):
                     pos.append('PUNCT')
                 else:
                     pos.append('X')
