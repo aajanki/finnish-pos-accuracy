@@ -13,11 +13,11 @@ def main():
 
     os.makedirs(outputdir, exist_ok=True)
 
-    print(f'Evaluating on {len(sentences)} sentences')
+    print(f'Number of test sentences: {len(sentences)}')
 
-    #evaluated = [UDPipe(), Voikko()]
-    evaluated = [Voikko()]
+    evaluated = [UDPipe(), Voikko()]
     for model in evaluated:
+        print()
         print(f'Evaluating {model.name}')
 
         le_filename = os.path.join(outputdir, f'lemma_erros_{model.name}.txt')
@@ -29,7 +29,6 @@ def main():
 
             print(f'Lemma accuracy: {lemma_accuracy}')
             print(f'POS accuracy: {pos_accuracy}')
-            print()
 
             write_errors(lemma_errors_file, lemma_errors)
             write_errors(pos_errors_file, pos_errors)
