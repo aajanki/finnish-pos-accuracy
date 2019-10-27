@@ -48,7 +48,9 @@ def evaluate_model(model, sentences):
         observed_lemmas, observed_pos = model.parse(sent['tokens'])
 
         expected_lemmas = sent['lemmas']
-        n = compute_matches(observed_lemmas, expected_lemmas)
+        n = compute_matches(
+            normalize_lemmas(observed_lemmas),
+            normalize_lemmas(expected_lemmas))
         correct_count = min(n, sentence_len)
         num_correct_lemmas += correct_count
 
@@ -70,6 +72,10 @@ def evaluate_model(model, sentences):
                 num_correct_pos/total_tokens,
                 lemma_errors,
                 pos_errors)
+
+
+def normalize_lemmas(lemmas):
+    return [w.lower().replace('#', '') for w in lemmas]
 
 
 def parse_conllu(f):
