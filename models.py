@@ -68,7 +68,7 @@ class Voikko():
                 t_without_inflection = inflection_postfix_re.sub(r'\1', t)
                 lemmas.append(t_without_inflection)
 
-                if all(x in '.,?!:;()[]{}"”\'-+' for x in t):
+                if all(x in '.,?!:;()[]{}"”\'-+…' for x in t):
                     tag = 'PUNCT'
                 elif t.istitle() or t.isupper(): # Name or acronym
                     tag = 'PROPN'
