@@ -70,7 +70,7 @@ class Voikko():
 
                 if all(x in '.,?!:;()[]{}"”\'-+' for x in t):
                     tag = 'PUNCT'
-                elif t.isupper():
+                elif t.istitle() or t.isupper(): # Name or acronym
                     tag = 'PROPN'
                 else:
                     tag = 'NOUN' # guess
