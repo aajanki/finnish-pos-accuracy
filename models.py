@@ -56,7 +56,7 @@ class Voikko():
                     i = 0
 
                 lemmas.append(analyzed[i].get('BASEFORM', t))
-                tag = analyzed[0].get('CLASS', 'X')
+                tag = analyzed[i].get('CLASS', 'X')
                 pos.append(self.tag_map[tag])
             else:
                 t_without_inflection = inflection_postfix_re.sub(r'\1', t)
