@@ -1,5 +1,8 @@
+import re
 import spacy_udpipe
 from voikko import libvoikko
+
+inflection_postfix_re = re.compile(r'(.{2,}):\w{1,4}$')
 
 
 class UDPipe():
@@ -56,7 +59,8 @@ class Voikko():
                 tag = analyzed[0].get('CLASS', 'X')
                 pos.append(self.tag_map[tag])
             else:
-                lemmas.append(t)
+                t_without_inflection = inflection_postfix_re.sub(r'\1', t)
+                lemmas.append(t_without_inflection)
 
                 if len(t) == 1 and t in '.,?!:;()[]{}"\'-+':
                     pos.append('PUNCT')
