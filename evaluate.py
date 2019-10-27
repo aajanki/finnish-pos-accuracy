@@ -1,3 +1,4 @@
+import time
 import os
 import os.path
 import numpy as np
@@ -9,18 +10,17 @@ from nlpmodels import *
 
 def main():
     outputdir = 'errors'
-    sentences = parse_conllu(open('data/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
-
-    os.makedirs(outputdir, exist_ok=True)
-
-    print(f'Number of test sentences: {len(sentences)}')
-
     models = [
         UDPipe('fi-tdt'),
         UDPipe('fi'),
         StanfordNLP(),
         Voikko()
     ]
+    sentences = parse_conllu(open('data/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
+
+    print(f'Number of test sentences: {len(sentences)}')
+
+    os.makedirs(outputdir, exist_ok=True)
     for model in models:
         print()
         print(f'Evaluating {model.name}')
@@ -29,11 +29,15 @@ def main():
         pe_filename = os.path.join(outputdir, f'pos_erros_{model.name}.txt')
         with open(le_filename, 'w') as lemma_errors_file, \
              open(pe_filename, 'w') as pos_errors_file:
+            t0 = time.time()
             lemma_accuracy, pos_accuracy, lemma_errors, pos_errors = \
                 evaluate_model(model, sentences)
+            duration = time.time() - t0
+            sentences_per_s = len(sentences)/duration
 
             print(f'Lemma accuracy: {lemma_accuracy:.3f}')
             print(f'POS accuracy: {pos_accuracy:.3f}')
+            print(f'Duration: {duration:.1f} s ({sentences_per_s:.1f} sentences/s)')
 
             write_errors(lemma_errors_file, lemma_errors)
             write_errors(pos_errors_file, pos_errors)
@@ -52,7 +56,7 @@ def evaluate_model(model, sentences):
         observed_lemmas, observed_pos = model.parse(sent['tokens'])
 
         expected_lemmas = sent['lemmas']
-        n = compute_matches(
+        n = count_matches(
             normalize_lemmas(observed_lemmas),
             normalize_lemmas(expected_lemmas))
         correct_count = min(n, sentence_len)
@@ -62,7 +66,7 @@ def evaluate_model(model, sentences):
             lemma_errors.append((sent['tokens'], observed_lemmas, expected_lemmas))
 
         expected_pos = sent['pos']
-        n = compute_matches(observed_pos, expected_pos)
+        n = count_matches(observed_pos, expected_pos)
         correct_count = min(n, sentence_len)
         num_correct_pos += correct_count
 
@@ -116,7 +120,7 @@ def parse_conllu(f):
     return sentences
 
 
-def compute_matches(seq_a, seq_b):
+def count_matches(seq_a, seq_b):
     if len(seq_a) == len(seq_b):
         return (np.asarray(seq_a) == np.asarray(seq_b)).sum()
     else:
