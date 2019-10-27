@@ -27,7 +27,7 @@ class Voikko():
         self.tag_map = {
             'nimisana': 'NOUN',
             'laatusana': 'ADJ',
-            'nimisana_laatusana': 'NOUN',
+            'nimisana_laatusana': 'ADJ',
             'teonsana': 'VERB',
             'seikkasana': 'ADV',
             'asemosana': 'PRON',
