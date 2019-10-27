@@ -6,9 +6,9 @@ inflection_postfix_re = re.compile(r'(.{2,}):\w{1,4}$')
 
 
 class UDPipe():
-    def __init__(self):
-        self.name = 'UDPipe'
-        self.nlp = spacy_udpipe.load('fi-tdt')
+    def __init__(self, language='fi-tdt'):
+        self.name = f'UDPipe-{language}'
+        self.nlp = spacy_udpipe.load(language)
 
     def parse(self, tokens):
         text = ' '.join(tokens)

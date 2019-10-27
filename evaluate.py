@@ -15,7 +15,7 @@ def main():
 
     print(f'Number of test sentences: {len(sentences)}')
 
-    evaluated = [UDPipe(), Voikko()]
+    evaluated = [UDPipe('fi-tdt'), UDPipe('fi'), Voikko()]
     for model in evaluated:
         print()
         print(f'Evaluating {model.name}')
@@ -27,8 +27,8 @@ def main():
             lemma_accuracy, pos_accuracy, lemma_errors, pos_errors = \
                 evaluate_model(model, sentences)
 
-            print(f'Lemma accuracy: {lemma_accuracy}')
-            print(f'POS accuracy: {pos_accuracy}')
+            print(f'Lemma accuracy: {lemma_accuracy:.3f}')
+            print(f'POS accuracy: {pos_accuracy:.3f}')
 
             write_errors(lemma_errors_file, lemma_errors)
             write_errors(pos_errors_file, pos_errors)
