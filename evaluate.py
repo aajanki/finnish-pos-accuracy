@@ -4,7 +4,7 @@ import numpy as np
 from alignment.sequence import Sequence
 from alignment.vocabulary import Vocabulary
 from alignment.sequencealigner import SimpleScoring, GlobalSequenceAligner
-from models import *
+from nlpmodels import *
 
 
 def main():
@@ -15,8 +15,13 @@ def main():
 
     print(f'Number of test sentences: {len(sentences)}')
 
-    evaluated = [UDPipe('fi-tdt'), UDPipe('fi'), StanfordNLP(), Voikko()]
-    for model in evaluated:
+    models = [
+        UDPipe('fi-tdt'),
+        UDPipe('fi'),
+        StanfordNLP(),
+        Voikko()
+    ]
+    for model in models:
         print()
         print(f'Evaluating {model.name}')
 
