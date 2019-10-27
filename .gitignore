@@ -1,4 +1,5 @@
 data/
-venv/
+model_resources/
 errors/
-__pycache__
+venv/
+__pycache__/

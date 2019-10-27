@@ -1,5 +1,7 @@
 import re
 import spacy_udpipe
+import stanfordnlp
+from spacy_stanfordnlp import StanfordNLPLanguage
 from voikko import libvoikko
 
 inflection_postfix_re = re.compile(r'(.{2,}):\w{1,4}$')
@@ -12,12 +14,18 @@ class UDPipe():
 
     def parse(self, tokens):
         text = ' '.join(tokens)
-        doc = self.nlp(text)
+        return process_spacy(self.nlp, text)
 
-        pos = [t.pos_ for t in doc]
-        lemmas = [t.lemma_ for t in doc]
 
-        return (lemmas, pos)
+class StanfordNLP():
+    def __init__(self):
+        self.name = 'stanfordnlp'
+        self.snlp = stanfordnlp.Pipeline(lang='fi', models_dir='model_resources')
+        self.nlp = StanfordNLPLanguage(self.snlp)
+
+    def parse(self, tokens):
+        text = ' '.join(tokens)
+        return process_spacy(self.nlp, text)
 
 
 class Voikko():
@@ -79,3 +87,10 @@ class Voikko():
                 pos.append(tag)
 
         return lemmas, pos
+
+
+def process_spacy(nlp, text):
+    doc = nlp(text)
+    pos = [t.pos_ for t in doc]
+    lemmas = [t.lemma_ for t in doc]
+    return (lemmas, pos)

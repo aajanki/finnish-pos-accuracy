@@ -15,7 +15,7 @@ def main():
 
     print(f'Number of test sentences: {len(sentences)}')
 
-    evaluated = [UDPipe('fi-tdt'), UDPipe('fi'), Voikko()]
+    evaluated = [UDPipe('fi-tdt'), UDPipe('fi'), StanfordNLP(), Voikko()]
     for model in evaluated:
         print()
         print(f'Evaluating {model.name}')

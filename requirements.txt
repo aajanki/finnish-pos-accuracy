@@ -1,5 +1,6 @@
 alignment
 numpy
 spacy-udpipe
+spacy-stanfordnlp
 wheel
 voikko
