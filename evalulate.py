@@ -1,39 +1,48 @@
-import spacy_udpipe
 import numpy as np
 from alignment.sequence import Sequence
 from alignment.vocabulary import Vocabulary
 from alignment.sequencealigner import SimpleScoring, GlobalSequenceAligner
+from models import *
 
 
 def main():
-    nlp = spacy_udpipe.load('fi-tdt')
-
     sentences = parse_conllu(open('data/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
 
     print(f'Evaluating on {len(sentences)} sentences')
-    
-    num_tokens = 0
+
+    evaluated = [UDPipe(), Voikko()]
+    for model in evaluated:
+        print(f'Evaluatin {model.name}')
+        
+        lemma_accuracy, pos_accuracy = evaluate_model(model, sentences)
+
+        print(f'Lemma accuracy: {lemma_accuracy}')
+        print(f'POS accuracy: {pos_accuracy}')
+        print()
+
+
+def evaluate_model(model, sentences):
+    total_tokens = 0
     num_correct_lemmas = 0
     num_correct_pos = 0
     for sent in sentences:
-        text = ' '.join(sent['tokens'])
-        doc = nlp(text)
-
         sentence_len = len(sent['tokens'])
-        num_tokens += sentence_len
+        total_tokens += sentence_len
 
-        observed_pos = [t.pos_ for t in doc]
-        expected_pos = sent['pos']
-        n = compute_matches(observed_pos, expected_pos)
-        num_correct_pos += min(n, sentence_len)
-        
-        observed_lemmas = [t.lemma_ for t in doc]
+        observed_lemmas, observed_pos = model.parse(sent['tokens'])
+
         expected_lemmas = sent['lemmas']
         n = compute_matches(observed_lemmas, expected_lemmas)
         num_correct_lemmas += min(n, sentence_len)
 
-    print(f'POS accuracy: {num_correct_pos/num_tokens}')
-    print(f'Lemma accuracy: {num_correct_lemmas/num_tokens}')
+        expected_pos = sent['pos']
+        n = compute_matches(observed_pos, expected_pos)
+        num_correct_pos += min(n, sentence_len)
+
+    if total_tokens <= 0:
+        return (0.0, 0.0)
+    else:
+        return (num_correct_lemmas/total_tokens, num_correct_pos/total_tokens)
 
 
 def parse_conllu(f):

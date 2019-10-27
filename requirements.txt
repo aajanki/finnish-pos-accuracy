@@ -2,3 +2,4 @@ alignment
 numpy
 spacy-udpipe
 wheel
+voikko

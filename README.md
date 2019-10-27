@@ -2,6 +2,8 @@
 
 ## Setup
 
+Install libvoikko with Finnish morphology data files.
+
 ```
 python3 -m venv venv
 source venv/bin/activate
