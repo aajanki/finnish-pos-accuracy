@@ -16,7 +16,7 @@ def main():
         StanfordNLP(),
         Voikko()
     ]
-    sentences = parse_conllu(open('data/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
+    sentences = parse_conllu(open('data/test/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
 
     print(f'Number of test sentences: {len(sentences)}')
 

@@ -20,7 +20,7 @@ class UDPipe():
 class StanfordNLP():
     def __init__(self):
         self.name = 'stanfordnlp'
-        self.snlp = stanfordnlp.Pipeline(lang='fi', models_dir='model_resources')
+        self.snlp = stanfordnlp.Pipeline(lang='fi', models_dir='data/stanfordnlp_resources')
         self.nlp = StanfordNLPLanguage(self.snlp)
 
     def parse(self, tokens):
