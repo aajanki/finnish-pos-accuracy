@@ -9,7 +9,7 @@ from nlpmodels import *
 
 
 def main():
-    outputdir = 'errors'
+    outputdir = 'results/errorcases'
     models = [
         UDPipe('fi-tdt'),
         UDPipe('fi'),
