@@ -9,9 +9,8 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-./load_data.sh
-
-python download_models.py
+./download_data.sh
+./download_models.sh
 ```
 
 ## Run
