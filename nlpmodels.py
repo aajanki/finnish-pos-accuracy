@@ -1,4 +1,9 @@
+import io
+import logging
 import re
+import subprocess
+import time
+import requests
 import spacy_udpipe
 import stanfordnlp
 from spacy_stanfordnlp import StanfordNLPLanguage
@@ -16,6 +21,9 @@ class UDPipe():
         text = ' '.join(tokens)
         return process_spacy(self.nlp, text)
 
+    def terminate(self):
+        pass
+
 
 class StanfordNLP():
     def __init__(self):
@@ -26,6 +34,9 @@ class StanfordNLP():
     def parse(self, tokens):
         text = ' '.join(tokens)
         return process_spacy(self.nlp, text)
+
+    def terminate(self):
+        pass
 
 
 class Voikko():
@@ -89,6 +100,9 @@ class Voikko():
 
         return tag
 
+    def terminate(self):
+        pass
+
     def _choose_baseform(self, analyzed, orig):
         if not analyzed:
             return (None, None)
@@ -100,6 +114,81 @@ class Voikko():
             i = 0
 
         return (analyzed[i].get('BASEFORM', orig), analyzed[i].get('CLASS', 'X'))
+
+
+class PosLemmaToken():
+    def __init__(self, pos, lemma):
+        self.pos_ = pos
+        self.lemma_ = lemma
+
+
+class TurkuNeuralParser():
+    def __init__(self):
+        self.name = 'turku-neural-parser'
+        self.port = 7689
+        self.server_process = None
+        self.start_server()
+
+    def parse(self, words):
+        tokens = self.nlp(' '.join(words))
+        pos = [t.pos_ for t in tokens]
+        lemmas = [t.lemma_ for t in tokens]
+        return (lemmas, pos)
+
+    def nlp(self, text):
+        tokens = []
+        response = self._send_request(text)
+        for line in io.StringIO(response).readlines():
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+
+            fields = line.split('\t')
+            assert len(fields) == 10
+            tokens.append(PosLemmaToken(fields[3], fields[2]))
+
+        return tokens
+
+    def start_server(self):
+        if self.server_process:
+            return
+
+        logging.info('starting the server')
+
+        self.server_process = subprocess.Popen(
+            ['python', 'full_pipeline_server.py',
+             '--port', str(self.port),
+             '--gpu', '-1',
+             '--conf', '../Turku-npp-models/fi_tdt/pipelines.yaml',
+             'parse_plaintext'],
+            cwd='data/Turku-neural-parser-pipeline')
+
+        time.sleep(30)
+
+    def stop_server(self):
+        if self.server_process is None:
+            return
+
+        logging.info('stopping the server')
+
+        self.server_process.terminate()
+        self.server_process.wait()
+        self.server_process = None
+
+    def terminate(self):
+        self.stop_server()
+
+    def _send_request(self, text):
+        logging.debug(f'Sending request: {text}')
+
+        r = requests.post(self._server_url(),
+                          data=text.encode('utf-8'),
+                          headers={'Content-Type': 'text/plain; charset=utf-8'})
+        r.raise_for_status()
+        return r.text
+
+    def _server_url(self):
+        return f'http://localhost:{str(self.port)}'
 
 
 def process_spacy(nlp, text):

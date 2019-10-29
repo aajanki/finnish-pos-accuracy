@@ -1,3 +1,4 @@
+import logging
 import time
 import os
 import os.path
@@ -9,12 +10,15 @@ from nlpmodels import *
 
 
 def main():
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+
     outputdir = 'results/errorcases'
     models = [
         UDPipe('fi-tdt'),
         UDPipe('fi'),
         StanfordNLP(),
-        Voikko()
+        Voikko(),
+        TurkuNeuralParser()
     ]
     sentences = parse_conllu(open('data/test/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
 
@@ -41,6 +45,9 @@ def main():
 
             write_errors(lemma_errors_file, lemma_errors)
             write_errors(pos_errors_file, pos_errors)
+
+    for model in models:
+        model.terminate()
 
 
 def evaluate_model(model, sentences):

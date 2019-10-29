@@ -4,3 +4,4 @@ spacy-udpipe
 spacy-stanfordnlp
 wheel
 voikko
+request
