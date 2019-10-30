@@ -1,5 +1,6 @@
 import io
 import logging
+import os
 import re
 import subprocess
 import time
@@ -154,15 +155,20 @@ class TurkuNeuralParser():
         if self.container_name is not None:
             return
 
-        logging.info('starting the server')
-        logging.warning('This might ask for the sudo password for launching '
-                        'the Turku-neural-parser docker container')
-
         container_name = 'turku_parser'
         docker_image = f'turkunlp/turku-neural-parser:{self.docker_tag}'
-        subprocess.run(['sudo', 'docker', 'run', '--name', container_name, '-d',
-                        '-p', str(self.port) + ':7689', docker_image,
-                        'server', 'fi_tdt', 'parse_plaintext'], check=True)
+        command = ['docker', 'run', '--name', container_name, '-d',
+                   '-p', str(self.port) + ':7689', docker_image,
+                   'server', 'fi_tdt', 'parse_plaintext']
+
+        logging.info('starting the server')
+
+        if self.sudo_needed():
+            command = ['sudo'] + command
+            logging.warning('This might ask for the sudo password for launching '
+                            'the Turku-neural-parser docker container')
+
+        subprocess.run(command, check=True)
         self.container_name = container_name
 
         time.sleep(30)
@@ -171,16 +177,25 @@ class TurkuNeuralParser():
         if self.container_name is None:
             return
 
-        logging.info('stopping the server')
-        logging.warning('This might ask for the sudo password for '
-                        'stopping the docker container')
+        command_stop = ['docker', 'stop', self.container_name]
+        command_rm = ['docker', 'rm', self.container_name]
 
-        subprocess.run(['sudo', 'docker', 'stop', self.container_name])
-        subprocess.run(['sudo', 'docker', 'rm', self.container_name])
+        logging.info('stopping the server')
+        if self.sudo_needed():
+            command_stop = ['sudo'] + command_stop
+            command_rm = ['sudo'] + command_rm
+            logging.warning('This might ask for the sudo password for '
+                            'stopping the docker container')
+
+        subprocess.run(command_stop)
+        subprocess.run(command_rm)
         self.container_name = None
 
     def terminate(self):
         self.stop_server()
+
+    def sudo_needed(self):
+        return os.environ.get('DOCKER_NEEDS_SUDO') is not None
 
     def _send_request(self, text):
         logging.debug(f'Sending request: {text}')
