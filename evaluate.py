@@ -22,7 +22,8 @@ def main():
     ]
     sentences = parse_conllu(open('data/test/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
 
-    print(f'Number of test sentences: {len(sentences)}')
+    print(f'Test set size: {count_tokens(sentences)} test tokens '
+          f'in {len(sentences)} sentences')
 
     os.makedirs(outputdir, exist_ok=True)
     for model in models:
@@ -125,6 +126,10 @@ def parse_conllu(f):
         sentences.append({'tokens': tokens, 'lemmas': lemmas, 'pos': pos})
 
     return sentences
+
+
+def count_tokens(sentences):
+    return np.sum([len(x['tokens']) for x in sentences])
 
 
 def count_matches(seq_a, seq_b):
