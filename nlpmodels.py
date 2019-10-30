@@ -125,8 +125,9 @@ class PosLemmaToken():
 class TurkuNeuralParser():
     def __init__(self):
         self.name = 'turku-neural-parser'
-        self.port = 7689
-        self.server_process = None
+        self.docker_tag = '1.0.2-fi-en-sv-cpu'
+        self.port = 15000
+        self.container_name = None
         self.start_server()
 
     def parse(self, words):
@@ -150,30 +151,33 @@ class TurkuNeuralParser():
         return tokens
 
     def start_server(self):
-        if self.server_process:
+        if self.container_name is not None:
             return
 
         logging.info('starting the server')
+        logging.warning('This might ask for the sudo password for launching '
+                        'the Turku-neural-parser docker container')
 
-        self.server_process = subprocess.Popen(
-            ['python', 'full_pipeline_server.py',
-             '--port', str(self.port),
-             '--gpu', '-1',
-             '--conf', '../Turku-npp-models/fi_tdt/pipelines.yaml',
-             'parse_plaintext'],
-            cwd='data/Turku-neural-parser-pipeline')
+        container_name = 'turku_parser'
+        docker_image = f'turkunlp/turku-neural-parser:{self.docker_tag}'
+        subprocess.run(['sudo', 'docker', 'run', '--name', container_name, '-d',
+                        '-p', str(self.port) + ':7689', docker_image,
+                        'server', 'fi_tdt', 'parse_plaintext'], check=True)
+        self.container_name = container_name
 
         time.sleep(30)
 
     def stop_server(self):
-        if self.server_process is None:
+        if self.container_name is None:
             return
 
         logging.info('stopping the server')
+        logging.warning('This might ask for the sudo password for '
+                        'stopping the docker container')
 
-        self.server_process.terminate()
-        self.server_process.wait()
-        self.server_process = None
+        subprocess.run(['sudo', 'docker', 'stop', self.container_name])
+        subprocess.run(['sudo', 'docker', 'rm', self.container_name])
+        self.container_name = None
 
     def terminate(self):
         self.stop_server()
@@ -181,14 +185,12 @@ class TurkuNeuralParser():
     def _send_request(self, text):
         logging.debug(f'Sending request: {text}')
 
-        r = requests.post(self._server_url(),
+        server_url = f'http://localhost:{str(self.port)}'
+        r = requests.post(server_url,
                           data=text.encode('utf-8'),
                           headers={'Content-Type': 'text/plain; charset=utf-8'})
         r.raise_for_status()
         return r.text
-
-    def _server_url(self):
-        return f'http://localhost:{str(self.port)}'
 
 
 def process_spacy(nlp, text):
