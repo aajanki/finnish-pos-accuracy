@@ -15,51 +15,63 @@ def main():
 
     outputdir = 'results'
     errorcasedir = 'results/errorcases'
+
     models = [
         UDPipe('fi-tdt'),
-        qUDPipe('fi'),
+        #UDPipe('fi'),
         StanfordNLP(),
         Voikko(),
         TurkuNeuralParser()
     ]
-    sentences = parse_conllu(open('data/test/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
 
-    print(f'Test set size: {count_tokens(sentences)} test tokens '
-          f'in {len(sentences)} sentences')
+    testsets = [
+        { 'name': 'UD_Finnish_TDT', 'load': load_testset_ud_tdt },
+        { 'name': 'ftb1u', 'load': load_testset_ftb1u },
+    ]
 
     os.makedirs(outputdir, exist_ok=True)
     os.makedirs(errorcasedir, exist_ok=True)
-    evaluation_results = []
-    for model in models:
-        print()
-        print(f'Evaluating {model.name}')
+    for testset in testsets:
+        sentences = testset['load']()
 
-        t0 = time.time()
-        lemma_accuracy, pos_accuracy, lemma_errors, pos_errors = \
-            evaluate_model(model, sentences)
-        duration = time.time() - t0
-        sentences_per_s = len(sentences)/duration
+        print(f'Test set {testset["name"]}')
+        print(f'Test set size: {count_tokens(sentences)} test tokens '
+              f'in {len(sentences)} sentences')
 
-        evaluation_results.append({
-            'lemma accuracy': lemma_accuracy,
-            'pos accuracy': pos_accuracy,
-            'duration': duration,
-            'sentences_per_second': sentences_per_s
-        })
+        evaluation_results = []
+        for model in models:
+            print()
+            print(f'Evaluating {model.name} on {testset["name"]}')
 
-        print(f'Lemma accuracy: {lemma_accuracy:.3f}')
-        print(f'POS accuracy: {pos_accuracy:.3f}')
-        print(f'Duration: {duration:.1f} s ({sentences_per_s:.1f} sentences/s)')
+            t0 = time.time()
+            lemma_accuracy, pos_accuracy, lemma_errors, pos_errors = \
+                evaluate_model(model, sentences)
+            duration = time.time() - t0
+            sentences_per_s = len(sentences)/duration
 
-        le_filename = os.path.join(errorcasedir, f'lemma_erros_{model.name}.txt')
-        pe_filename = os.path.join(errorcasedir, f'pos_erros_{model.name}.txt')
-        with open(le_filename, 'w') as lemma_errors_file, \
-             open(pe_filename, 'w') as pos_errors_file:
-            write_errors(lemma_errors_file, lemma_errors)
-            write_errors(pos_errors_file, pos_errors)
+            evaluation_results.append({
+                'lemma accuracy': lemma_accuracy,
+                'pos accuracy': pos_accuracy,
+                'duration': duration,
+                'sentences_per_second': sentences_per_s
+            })
 
-    df = pd.DataFrame(evaluation_results, index=[m.name for m in models])
-    df.to_csv(os.path.join(outputdir, 'evaluation.csv'))
+            print(f'Lemma accuracy: {lemma_accuracy:.3f}')
+            print(f'POS accuracy: {pos_accuracy:.3f}')
+            print(f'Duration: {duration:.1f} s '
+                  f'({sentences_per_s:.1f} sentences/s)')
+
+            le_filename = os.path.join(
+                errorcasedir, f'lemma_erros_{model.name}_{testset["name"]}.txt')
+            pe_filename = os.path.join(
+                errorcasedir, f'pos_erros_{model.name}_{testset["name"]}.txt')
+            with open(le_filename, 'w') as lemma_errors_file, \
+                 open(pe_filename, 'w') as pos_errors_file:
+                write_errors(lemma_errors_file, lemma_errors)
+                write_errors(pos_errors_file, pos_errors)
+
+        df = pd.DataFrame(evaluation_results, index=[m.name for m in models])
+        df.to_csv(os.path.join(outputdir, f'evaluation_{testset["name"]}.csv'))
 
     for model in models:
         model.terminate()
@@ -106,6 +118,22 @@ def evaluate_model(model, sentences):
 
 def normalize_lemmas(lemmas):
     return [w.lower().replace('#', '') for w in lemmas]
+
+
+def load_testset_ud_tdt():
+    return parse_conllu(open('data/test/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
+
+
+def load_testset_ftb1u():
+    sentences = parse_conllu(open('data/test/ftb1/ftb1u.tsv'))
+    return [conj_to_cconj(x) for x in sentences]
+
+
+def conj_to_cconj(sentence):
+    updated_pos = ['CCONJ' if x == 'CONJ' else x for x in sentence['pos']]
+    res = sentence.copy()
+    res['pos']= updated_pos
+    return res
 
 
 def parse_conllu(f):
