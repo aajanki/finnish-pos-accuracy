@@ -3,6 +3,7 @@ import time
 import os
 import os.path
 import numpy as np
+import pandas as pd
 from alignment.sequence import Sequence
 from alignment.vocabulary import Vocabulary
 from alignment.sequencealigner import SimpleScoring, GlobalSequenceAligner
@@ -12,10 +13,11 @@ from nlpmodels import *
 def main():
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-    outputdir = 'results/errorcases'
+    outputdir = 'results'
+    errorcasedir = 'results/errorcases'
     models = [
         UDPipe('fi-tdt'),
-        UDPipe('fi'),
+        qUDPipe('fi'),
         StanfordNLP(),
         Voikko(),
         TurkuNeuralParser()
@@ -26,26 +28,38 @@ def main():
           f'in {len(sentences)} sentences')
 
     os.makedirs(outputdir, exist_ok=True)
+    os.makedirs(errorcasedir, exist_ok=True)
+    evaluation_results = []
     for model in models:
         print()
         print(f'Evaluating {model.name}')
 
-        le_filename = os.path.join(outputdir, f'lemma_erros_{model.name}.txt')
-        pe_filename = os.path.join(outputdir, f'pos_erros_{model.name}.txt')
+        t0 = time.time()
+        lemma_accuracy, pos_accuracy, lemma_errors, pos_errors = \
+            evaluate_model(model, sentences)
+        duration = time.time() - t0
+        sentences_per_s = len(sentences)/duration
+
+        evaluation_results.append({
+            'lemma accuracy': lemma_accuracy,
+            'pos accuracy': pos_accuracy,
+            'duration': duration,
+            'sentences_per_second': sentences_per_s
+        })
+
+        print(f'Lemma accuracy: {lemma_accuracy:.3f}')
+        print(f'POS accuracy: {pos_accuracy:.3f}')
+        print(f'Duration: {duration:.1f} s ({sentences_per_s:.1f} sentences/s)')
+
+        le_filename = os.path.join(errorcasedir, f'lemma_erros_{model.name}.txt')
+        pe_filename = os.path.join(errorcasedir, f'pos_erros_{model.name}.txt')
         with open(le_filename, 'w') as lemma_errors_file, \
              open(pe_filename, 'w') as pos_errors_file:
-            t0 = time.time()
-            lemma_accuracy, pos_accuracy, lemma_errors, pos_errors = \
-                evaluate_model(model, sentences)
-            duration = time.time() - t0
-            sentences_per_s = len(sentences)/duration
-
-            print(f'Lemma accuracy: {lemma_accuracy:.3f}')
-            print(f'POS accuracy: {pos_accuracy:.3f}')
-            print(f'Duration: {duration:.1f} s ({sentences_per_s:.1f} sentences/s)')
-
             write_errors(lemma_errors_file, lemma_errors)
             write_errors(pos_errors_file, pos_errors)
+
+    df = pd.DataFrame(evaluation_results, index=[m.name for m in models])
+    df.to_csv(os.path.join(outputdir, 'evaluation.csv'))
 
     for model in models:
         model.terminate()

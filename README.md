@@ -28,3 +28,6 @@ docker commands.
 export DOCKER_NEEDS_SUDO=1
 python evaluate.py
 ```
+
+The results will be saved in results/evaluation.csv and POS and lemma
+errors made by each model will be saved in results/errorcases.

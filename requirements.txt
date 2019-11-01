@@ -1,5 +1,6 @@
 alignment
 numpy
+pandas
 spacy-udpipe
 spacy-stanfordnlp
 wheel
