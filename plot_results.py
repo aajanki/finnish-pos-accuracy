@@ -15,19 +15,52 @@ def main():
         load_results('ftb2-news'),
         load_results('ftb2-sofie'),
         load_results('ftb2-wikipedia')
-    ])    
+    ])
+    model_order = [
+        'Voikko', 'UDPipe-fi-tdt', 'StanfordNLP', 'Turku-neural-parser'
+    ]
 
-    sns.barplot(x='model', y='Lemmatization WER', hue='testset', data=results)
-    plt.savefig(os.path.join(imagedir, 'lemma.png'))
+    sns.barplot(x='model', y='Lemmatization WER', data=results, order=model_order)
+    plt.savefig(os.path.join(imagedir, 'lemma_wer.png'))
     plt.close()
 
-    sns.barplot(x='model', y='UPOS WER', hue='testset', data=results)
-    plt.savefig(os.path.join(imagedir, 'pos.png'))
+    sns.barplot(x='model', y='Lemmatization WER', hue='testset', data=results, order=model_order)
+    plt.savefig(os.path.join(imagedir, 'lemma_wer_by_testset.png'))
     plt.close()
 
-    sns.relplot(x='Sentences per second', y='Lemmatization WER', hue='model', data=results)
-    plt.xscale('log')
+    sns.barplot(x='model', y='Lemmatization aligned accuracy', data=results, order=model_order)
+    plt.savefig(os.path.join(imagedir, 'lemma_acc.png'))
+    plt.close()
+
+    sns.barplot(x='model', y='Lemmatization F1', data=results, order=model_order)
+    plt.savefig(os.path.join(imagedir, 'lemma_f1.png'))
+    plt.close()
+
+    sns.barplot(x='model', y='UPOS WER', data=results, order=model_order)
+    plt.savefig(os.path.join(imagedir, 'pos_wer.png'))
+    plt.close()
+
+    sns.barplot(x='model', y='UPOS WER', hue='testset', data=results, order=model_order)
+    plt.savefig(os.path.join(imagedir, 'pos_wer_by_testset.png'))
+    plt.close()
+
+    sns.barplot(x='model', y='UPOS aligned accuracy', data=results, order=model_order)
+    plt.savefig(os.path.join(imagedir, 'pos_acc.png'))
+    plt.close()
+
+    sns.barplot(x='model', y='UPOS F1', data=results, order=model_order)
+    plt.savefig(os.path.join(imagedir, 'pos_f1.png'))
+    plt.close()
+
+    sns.relplot(x='Lemmatization WER', y='Sentences per second', hue='model', data=results)
+    plt.yscale('log')
     plt.savefig(os.path.join(imagedir, 'lemma_speed.png'))
+    plt.close()
+
+    sns.relplot(x='UPOS WER', y='Sentences per second', hue='model', data=results)
+    plt.yscale('log')
+    plt.savefig(os.path.join(imagedir, 'pos_speed.png'))
+    plt.close()
 
 
 def load_results(testsetname):
