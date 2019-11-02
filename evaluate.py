@@ -32,52 +32,54 @@ def main():
         { 'name': 'ftb2-wikipedia', 'load': load_testset_ftb2_wikipedia },
     ]
 
-    os.makedirs(outputdir, exist_ok=True)
-    os.makedirs(errorcasedir, exist_ok=True)
-    for testset in testsets:
-        sentences = testset['load']()
+    try:
+        os.makedirs(outputdir, exist_ok=True)
+        os.makedirs(errorcasedir, exist_ok=True)
+        for testset in testsets:
+            sentences = testset['load']()
 
-        print(f'Test set {testset["name"]}')
-        print(f'Test set size: {count_tokens(sentences)} test tokens '
-              f'in {len(sentences)} sentences')
+            print(f'Test set {testset["name"]}')
+            print(f'Test set size: {count_tokens(sentences)} test tokens '
+                  f'in {len(sentences)} sentences')
 
-        evaluation_results = []
+            evaluation_results = []
+            for model in models:
+                print()
+                print(f'Evaluating {model.name} on {testset["name"]}')
+
+                t0 = time.time()
+                lemma_accuracy, pos_accuracy, lemma_errors, pos_errors = \
+                    evaluate_model(model, sentences)
+                duration = time.time() - t0
+                sentences_per_s = len(sentences)/duration
+
+                evaluation_results.append({
+                    'lemma accuracy': lemma_accuracy,
+                    'pos accuracy': pos_accuracy,
+                    'duration': duration,
+                    'sentences_per_second': sentences_per_s
+                })
+
+                print(f'Lemma accuracy: {lemma_accuracy:.3f}')
+                print(f'POS accuracy: {pos_accuracy:.3f}')
+                print(f'Duration: {duration:.1f} s '
+                      f'({sentences_per_s:.1f} sentences/s)')
+
+                le_filename = os.path.join(
+                    errorcasedir, f'lemma_erros_{model.name}_{testset["name"]}.txt')
+                pe_filename = os.path.join(
+                    errorcasedir, f'pos_erros_{model.name}_{testset["name"]}.txt')
+                with open(le_filename, 'w') as lemma_errors_file, \
+                     open(pe_filename, 'w') as pos_errors_file:
+                    write_errors(lemma_errors_file, lemma_errors)
+                    write_errors(pos_errors_file, pos_errors)
+
+            df = pd.DataFrame(evaluation_results, index=[m.name for m in models])
+            df.to_csv(os.path.join(outputdir, f'evaluation_{testset["name"]}.csv'))
+
+    finally:
         for model in models:
-            print()
-            print(f'Evaluating {model.name} on {testset["name"]}')
-
-            t0 = time.time()
-            lemma_accuracy, pos_accuracy, lemma_errors, pos_errors = \
-                evaluate_model(model, sentences)
-            duration = time.time() - t0
-            sentences_per_s = len(sentences)/duration
-
-            evaluation_results.append({
-                'lemma accuracy': lemma_accuracy,
-                'pos accuracy': pos_accuracy,
-                'duration': duration,
-                'sentences_per_second': sentences_per_s
-            })
-
-            print(f'Lemma accuracy: {lemma_accuracy:.3f}')
-            print(f'POS accuracy: {pos_accuracy:.3f}')
-            print(f'Duration: {duration:.1f} s '
-                  f'({sentences_per_s:.1f} sentences/s)')
-
-            le_filename = os.path.join(
-                errorcasedir, f'lemma_erros_{model.name}_{testset["name"]}.txt')
-            pe_filename = os.path.join(
-                errorcasedir, f'pos_erros_{model.name}_{testset["name"]}.txt')
-            with open(le_filename, 'w') as lemma_errors_file, \
-                 open(pe_filename, 'w') as pos_errors_file:
-                write_errors(lemma_errors_file, lemma_errors)
-                write_errors(pos_errors_file, pos_errors)
-
-        df = pd.DataFrame(evaluation_results, index=[m.name for m in models])
-        df.to_csv(os.path.join(outputdir, f'evaluation_{testset["name"]}.csv'))
-
-    for model in models:
-        model.terminate()
+            model.terminate()
 
 
 def evaluate_model(model, sentences):
