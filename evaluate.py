@@ -21,7 +21,8 @@ def main():
         #UDPipe('fi'),
         StanfordNLP(),
         Voikko(),
-        TurkuNeuralParser()
+        TurkuNeuralParser(),
+        FinnPos()
     ]
 
     testsets = [

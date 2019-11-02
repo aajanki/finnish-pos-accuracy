@@ -17,7 +17,7 @@ def main():
         load_results('ftb2-wikipedia')
     ])
     model_order = [
-        'Voikko', 'UDPipe-fi-tdt', 'StanfordNLP', 'Turku-neural-parser'
+        'Voikko', 'UDPipe-fi-tdt', 'StanfordNLP', 'Turku-neural-parser', 'FinnPos'
     ]
 
     sns.barplot(x='model', y='Lemmatization WER', data=results, order=model_order)

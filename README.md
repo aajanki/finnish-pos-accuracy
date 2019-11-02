@@ -3,6 +3,7 @@
 ## Setup
 
 Install dependencies:
+* clang
 * Docker
 * libvoikko with Finnish morphology data files
 

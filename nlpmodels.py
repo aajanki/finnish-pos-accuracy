@@ -13,6 +13,12 @@ from voikko import libvoikko
 inflection_postfix_re = re.compile(r'(.{2,}):\w{1,4}$')
 
 
+class PosLemmaToken():
+    def __init__(self, pos, lemma):
+        self.pos_ = pos
+        self.lemma_ = lemma
+
+
 class UDPipe():
     def __init__(self, language='fi-tdt'):
         self.name = f'UDPipe-{language}'
@@ -117,12 +123,6 @@ class Voikko():
         return (analyzed[i].get('BASEFORM', orig), analyzed[i].get('CLASS', 'X'))
 
 
-class PosLemmaToken():
-    def __init__(self, pos, lemma):
-        self.pos_ = pos
-        self.lemma_ = lemma
-
-
 class TurkuNeuralParser():
     def __init__(self):
         self.name = 'Turku-neural-parser'
@@ -206,6 +206,71 @@ class TurkuNeuralParser():
                           headers={'Content-Type': 'text/plain; charset=utf-8'})
         r.raise_for_status()
         return r.text
+
+
+class FinnPos():
+    def __init__(self):
+        self.name = 'FinnPos'
+
+    def parse(self, words):
+        tokens = self.nlp(words)
+        pos = [t.pos_ for t in tokens]
+        lemmas = [t.lemma_ for t in tokens]
+        return (lemmas, pos)
+
+    def nlp(self, tokens):
+        text='\n'.join(tokens)
+        p = subprocess.run(['data/FinnPos/bin/ftb-label'], input=text,
+                           stdout=subprocess.PIPE, encoding='utf-8', check=True)
+
+        tokens = []
+        for line in p.stdout.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+
+            columns = line.split('\t')
+            assert len(columns) == 5, 'Unexpected number of columns ' \
+                f'in the ftb-label output. Expected 5, got {len(columns)}'
+
+            lemma = columns[2]
+            pos = self._finnpos_to_upos(columns[3])
+            tokens.append(PosLemmaToken(pos, lemma))
+
+        return tokens
+
+    def _finnpos_to_upos(self, tag):
+        if tag.startswith('[POS=NOUN]') and '[PROPER=PROPER]' in tag:
+            return 'PROPN'
+        elif tag.startswith('[POS=NOUN]'):
+            return 'NOUN'
+        elif tag.startswith('[POS=VERB]'):
+            return 'VERB'
+        elif tag.startswith('[POS=ADJECTIVE]'):
+            return 'ADJ'
+        elif tag.startswith('[POS=PRONOUN]'):
+            return 'PRON'
+        elif tag.startswith('[POS=ADVERB]'):
+            return 'ADV'
+        elif tag.startswith('[POS=ADPOSITION]'):
+            return 'ADP'
+        elif tag.startswith('[POS=NUMERAL]'):
+            return 'NUM'
+        elif tag.startswith('[POS=PUNCTUATION]'):
+            return 'PUNCT'
+        elif tag == '[POS=PARTICLE]|[SUBCAT=INTERJECTION]':
+            return 'INTJ'
+        elif tag == '[POS=PARTICLE]|[SUBCAT=CONJUNCTION]|[CONJ=COORD]':
+            return 'CCONJ'
+        elif tag.startswith('[POS=PARTICLE]'):
+            return 'PART'
+        elif tag.startswith('[POS=UNKNOWN]') or tag.startswith('[POS=TRUNCATED]'):
+            return 'X'
+        else:
+            assert False, f'Unknown tag: {tag}'
+
+    def terminate(self):
+        pass
 
 
 def process_spacy(nlp, text):
