@@ -28,7 +28,7 @@ class UDPipe():
 
 class StanfordNLP():
     def __init__(self):
-        self.name = 'stanfordnlp'
+        self.name = 'StanfordNLP'
         self.snlp = stanfordnlp.Pipeline(lang='fi', models_dir='data/stanfordnlp_resources')
         self.nlp = StanfordNLPLanguage(self.snlp)
 
@@ -42,7 +42,7 @@ class StanfordNLP():
 
 class Voikko():
     def __init__(self):
-        self.name = 'voikko'
+        self.name = 'Voikko'
         self.voikko = libvoikko.Voikko('fi')
         self.tag_map = {
             'nimisana': 'NOUN',
@@ -125,7 +125,7 @@ class PosLemmaToken():
 
 class TurkuNeuralParser():
     def __init__(self):
-        self.name = 'turku-neural-parser'
+        self.name = 'Turku-neural-parser'
         self.docker_tag = '1.0.2-fi-en-sv-cpu'
         self.port = 15000
         self.container_name = None

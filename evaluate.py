@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from alignment.sequence import Sequence
 from alignment.vocabulary import Vocabulary
-from alignment.sequencealigner import SimpleScoring, GlobalSequenceAligner
+from alignment.sequencealigner import SimpleScoring, StrictGlobalSequenceAligner
 from nlpmodels import *
 
 
@@ -47,23 +47,15 @@ def main():
                 print()
                 print(f'Evaluating {model.name} on {testset["name"]}')
 
-                t0 = time.time()
-                lemma_accuracy, pos_accuracy, lemma_errors, pos_errors = \
+                metrics, lemma_errors, pos_errors = \
                     evaluate_model(model, sentences)
-                duration = time.time() - t0
-                sentences_per_s = len(sentences)/duration
 
-                evaluation_results.append({
-                    'lemma accuracy': lemma_accuracy,
-                    'pos accuracy': pos_accuracy,
-                    'duration': duration,
-                    'sentences_per_second': sentences_per_s
-                })
+                print(f'Lemma WER: {metrics["Lemmatization WER"]:.3f}')
+                print(f'UPOS WER: {metrics["UPOS WER"]:.3f}')
+                print(f'Duration: {metrics["Duration"]:.1f} s '
+                      f'({metrics["Sentences per second"]:.1f} sentences/s)')
 
-                print(f'Lemma accuracy: {lemma_accuracy:.3f}')
-                print(f'POS accuracy: {pos_accuracy:.3f}')
-                print(f'Duration: {duration:.1f} s '
-                      f'({sentences_per_s:.1f} sentences/s)')
+                evaluation_results.append(metrics)
 
                 le_filename = os.path.join(
                     errorcasedir, f'lemma_erros_{model.name}_{testset["name"]}.txt')
@@ -83,42 +75,106 @@ def main():
 
 
 def evaluate_model(model, sentences):
-    total_tokens = 0
-    num_correct_lemmas = 0
-    num_correct_pos = 0
+    t0 = time.time()
+
+    lemma_matches = []
     lemma_errors = []
+    pos_matches = []
     pos_errors = []
     for sent in sentences:
-        sentence_len = len(sent['tokens'])
-        total_tokens += sentence_len
-
         observed_lemmas, observed_pos = model.parse(sent['tokens'])
 
         expected_lemmas = sent['lemmas']
-        n = count_matches(
-            normalize_lemmas(observed_lemmas),
-            normalize_lemmas(expected_lemmas))
-        correct_count = min(n, sentence_len)
-        num_correct_lemmas += correct_count
+        matches = count_sequence_matches(
+            normalize_lemmas(expected_lemmas),
+            normalize_lemmas(observed_lemmas))
+        lemma_matches.append(matches)
 
-        if sentence_len != correct_count:
+        if matches['matches'] != matches['gold_length']:
             lemma_errors.append((sent['tokens'], observed_lemmas, expected_lemmas))
 
         expected_pos = sent['pos']
-        n = count_matches(observed_pos, expected_pos)
-        correct_count = min(n, sentence_len)
-        num_correct_pos += correct_count
+        matches = count_sequence_matches(expected_pos, observed_pos)
+        pos_matches.append(matches)
 
-        if sentence_len != correct_count:
+        if matches['matches'] != matches['gold_length']:
             pos_errors.append((sent['tokens'], observed_pos, expected_pos))
 
-    if total_tokens <= 0:
-        return (0.0, 0.0, lemma_errors, pos_errors)
+    duration = time.time() - t0
+    sentences_per_s = len(sentences)/duration
+
+    df_lemma = pd.DataFrame(lemma_matches)
+    df_pos = pd.DataFrame(pos_matches)
+
+    metrics = {}
+    metrics.update(calculate_metrics(df_lemma, 'Lemmatization '))
+    metrics.update(calculate_metrics(df_pos, 'UPOS '))
+    metrics['Duration'] = duration
+    metrics['Sentences per second'] = sentences_per_s
+    return (metrics, lemma_errors, pos_errors)
+
+
+def count_sequence_matches(gold_seq, predicted_seq):
+    if len(gold_seq) == len(predicted_seq):
+        matches = (np.asarray(gold_seq) == np.asarray(predicted_seq)).sum()
+        aligned_length = len(gold_seq)
+        substitutions = aligned_length - matches
+        deletions = insertions = 0
     else:
-        return (num_correct_lemmas/total_tokens,
-                num_correct_pos/total_tokens,
-                lemma_errors,
-                pos_errors)
+        encoded = align_sequences(gold_seq, predicted_seq)
+        aligned_length = max(len(encoded.first), len(encoded.second))
+
+        substitutions = 0
+        deletions = 0
+        insertions = 0
+        matches = 0
+        for a, b in zip(encoded.first, encoded.second):
+            if a == encoded.gap:
+                insertions += 1
+            elif b == encoded.gap:
+                deletions += 1
+            elif a != b:
+                substitutions += 1
+            else:
+                matches += 1
+
+        reference_len = substitutions + deletions + matches
+        assert reference_len == len(gold_seq)
+
+    return {
+        'matches': matches,
+        'substitutions': substitutions,
+        'insertions': insertions,
+        'deletions': deletions,
+        'gold_length': len(gold_seq),
+        'predicted_length': len(predicted_seq),
+        'aligned_length': aligned_length
+    }
+
+
+def calculate_metrics(df, key_prefix):
+    if len(df) == 0:
+        wer = 0
+        f1 = 0
+        recall = 0
+        precision = 0
+        aligned_accuracy = 0
+    else:
+        x = df.sum(axis=0)
+        N = x['substitutions'] + x['deletions'] + x['matches']
+        wer = (x['substitutions'] + x['deletions'] + x['insertions'])/N
+        recall = x['matches']/x['gold_length']
+        precision = x['matches']/x['predicted_length']
+        f1 = 2*recall*precision/(recall + precision)
+        aligned_accuracy = x['matches']/x['aligned_length']
+
+    return {
+        key_prefix + 'WER': wer,
+        key_prefix + 'F1': f1,
+        key_prefix + 'precision': precision,
+        key_prefix + 'recall': recall,
+        key_prefix + 'aligned accuracy': aligned_accuracy
+    }
 
 
 def normalize_lemmas(lemmas):
@@ -234,19 +290,20 @@ def count_tokens(sentences):
     return np.sum([len(x['tokens']) for x in sentences])
 
 
-def count_matches(seq_a, seq_b):
-    if len(seq_a) == len(seq_b):
-        return (np.asarray(seq_a) == np.asarray(seq_b)).sum()
-    else:
-        v = Vocabulary()
-        encoded_a = v.encodeSequence(Sequence(seq_a))
-        encoded_b = v.encodeSequence(Sequence(seq_b))
+def align_sequences(seq_a, seq_b):
+    # Must escape '-' because alignment library uses it as a gap
+    # marker.
+    escaped_seq_a = ['\\-' if x == '-' else x for x in seq_a]
+    escaped_seq_b = ['\\-' if x == '-' else x for x in seq_b]
 
-        scoring = SimpleScoring(matchScore=2, mismatchScore=-2)
-        aligner = GlobalSequenceAligner(scoring, gapScore=-1)
-        _, encodeds = aligner.align(encoded_a, encoded_b, backtrace=True)
+    v = Vocabulary()
+    encoded_a = v.encodeSequence(Sequence(escaped_seq_a))
+    encoded_b = v.encodeSequence(Sequence(escaped_seq_b))
 
-        return (encodeds[0].first == encodeds[0].second).sum()
+    scoring = SimpleScoring(matchScore=3, mismatchScore=-1)
+    aligner = StrictGlobalSequenceAligner(scoring, gapScore=-2)
+    _, encodeds = aligner.align(encoded_a, encoded_b, backtrace=True)
+    return encodeds[0]
 
 
 def write_errors(f, errors):

@@ -17,17 +17,15 @@ def main():
         load_results('ftb2-wikipedia')
     ])    
 
-    sns.barplot(x='model', y='lemma accuracy', hue='testset', data=results)
-    plt.title('Lemma accuracy')
+    sns.barplot(x='model', y='Lemmatization WER', hue='testset', data=results)
     plt.savefig(os.path.join(imagedir, 'lemma.png'))
     plt.close()
 
-    sns.barplot(x='model', y='pos accuracy', hue='testset', data=results)
-    plt.title('POS accuracy')
+    sns.barplot(x='model', y='UPOS WER', hue='testset', data=results)
     plt.savefig(os.path.join(imagedir, 'pos.png'))
     plt.close()
 
-    sns.relplot(x='sentences_per_second', y='lemma accuracy', hue='model', data=results)
+    sns.relplot(x='Sentences per second', y='Lemmatization WER', hue='model', data=results)
     plt.xscale('log')
     plt.savefig(os.path.join(imagedir, 'lemma_speed.png'))
 
