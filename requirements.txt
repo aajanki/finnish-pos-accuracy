@@ -1,8 +1,9 @@
 alignment
 numpy
 pandas
+request
+seaborn
 spacy-udpipe
 spacy-stanfordnlp
 wheel
 voikko
-request
