@@ -11,7 +11,10 @@ def main():
 
     results = pd.concat([
         load_results('UD_Finnish_TDT'),
-        load_results('ftb1u')
+        load_results('ftb1u'),
+        load_results('ftb2-news'),
+        load_results('ftb2-sofie'),
+        load_results('ftb2-wikipedia')
     ])    
 
     sns.barplot(x='model', y='lemma accuracy', hue='testset', data=results)

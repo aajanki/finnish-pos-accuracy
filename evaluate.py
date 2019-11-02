@@ -27,6 +27,9 @@ def main():
     testsets = [
         { 'name': 'UD_Finnish_TDT', 'load': load_testset_ud_tdt },
         { 'name': 'ftb1u', 'load': load_testset_ftb1u },
+        { 'name': 'ftb2-news', 'load': load_testset_ftb2_news },
+        { 'name': 'ftb2-sofie', 'load': load_testset_ftb2_sofie },
+        { 'name': 'ftb2-wikipedia', 'load': load_testset_ftb2_wikipedia },
     ]
 
     os.makedirs(outputdir, exist_ok=True)
@@ -129,6 +132,53 @@ def load_testset_ftb1u():
     return [conj_to_cconj(x) for x in sentences]
 
 
+def load_testset_ftb2_wikipedia():
+    return load_testset_ftb2('data/test/ftb2/FinnTreeBank_2/wikipedia-samples_tab.txt')
+
+
+def load_testset_ftb2_news():
+    return load_testset_ftb2('data/test/ftb2/FinnTreeBank_2/news-samples_tab.txt')
+
+
+def load_testset_ftb2_sofie():
+    return load_testset_ftb2('data/test/ftb2/FinnTreeBank_2/sofie12_tab.txt')
+
+
+def load_testset_ftb2(filename):
+    sentences = parse_conllu(open(filename))
+    bad, good = partition(sentences, lambda x: any('|' in y for y in x['pos']))
+    if bad:
+        logging.warning(f'Skipping {len(bad)} sentences with suspicious POS tags')
+        sentences = good
+
+    return map_ftb2_tags(sentences)
+
+
+def map_ftb2_tags(sentences):
+    tag_map = {
+        'A': 'ADJ',
+        'Abbr': 'X',
+        'Adp': 'ADP',
+        'Adv': 'ADV',
+        'CC': 'CCONJ',
+        'CS': 'SCONJ',
+        'INTERJ': 'INTJ',
+        'N': 'NOUN',
+        'Num': 'NUM',
+        'POST': 'X',
+        'Pron': 'PRON',
+        'Pun': 'PUNCT',
+        'V': 'VERB'
+    }
+
+    updated = []
+    for sent in sentences:
+        sent2 = sent.copy()
+        sent2['pos'] = [tag_map[x] for x in sent['pos']]
+        updated.append(sent2)
+    return updated
+
+
 def conj_to_cconj(sentence):
     updated_pos = ['CCONJ' if x == 'CONJ' else x for x in sentence['pos']]
     res = sentence.copy()
@@ -136,18 +186,26 @@ def conj_to_cconj(sentence):
     return res
 
 
+def partition(seq, condition):
+    true_partition = [x for x in seq if condition(x)]
+    false_partition = [x for x in seq if not condition(x)]
+    return (true_partition, false_partition)
+
+
 def parse_conllu(f):
     sentences = []
     tokens = []
     lemmas = []
     pos = []
-    for line in f.readlines():
+    for linenum, line in enumerate(f.readlines()):
         line = line.strip()
         if line.startswith('#') or line == '':
             continue
 
         fields = line.split('\t')
-        assert len(fields) == 10
+        if len(fields) != 10:
+            logging.warning(f'Ignoring invalid line {linenum} with {len(fields)} fields')
+            continue
 
         sid = fields[0]
 
