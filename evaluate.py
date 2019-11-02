@@ -130,7 +130,7 @@ def load_testset_ud_tdt():
 
 
 def load_testset_ftb1u():
-    sentences = parse_conllu(open('data/test/ftb1/ftb1u.tsv'))
+    sentences = parse_conllu(open('data/test/ftb1/ftb1u_sample.tsv'))
     return [conj_to_cconj(x) for x in sentences]
 
 
