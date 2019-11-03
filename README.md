@@ -28,7 +28,10 @@ docker commands.
 ```
 export DOCKER_NEEDS_SUDO=1
 python evaluate.py
+
+python plot_results.py
 ```
 
-The results will be saved in results/evaluation.csv and POS and lemma
-errors made by each model will be saved in results/errorcases.
+The numerical results will be saved in results/evaluation.csv, POS and
+lemma errors made by each model will be saved in results/errorcases,
+and plots will be saved in results/images.
