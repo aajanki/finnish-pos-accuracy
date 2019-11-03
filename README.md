@@ -71,7 +71,10 @@ scale.
 
 Improvements seem to require exponentially more computation. Halving
 the error rate from 14% (Voikko) to 7% (FinnPos/Turku neural parser)
-increases the computational effort more than 1000-fold!
+increases the computational effort more than 1000-fold! All algorihtms
+are tested on CPU (4-core Intel Core Skylake i5). Turku neural parser
+and StanfordNLP can be run on a GPU which most likely improves their
+performance, but I haven't tested that.
 
 ### Part-of-speech tagging
 
@@ -83,5 +86,5 @@ Part-of-speech error rates for the tested algorithms.
 
 Execution duration as a function of the achieved error rate.
 
-After a certain point, increasing the computational effort provide
+After a certain point, increasing the computational effort provides
 only minimal accuracy gains.
