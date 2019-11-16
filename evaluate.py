@@ -183,72 +183,23 @@ def normalize_lemmas(lemmas):
 
 
 def load_testset_ud_tdt():
-    return parse_conllu(open('data/test/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
+    return parse_conllu(open('data/preprocessed/UD_Finnish-TDT/fi_tdt-ud-test.conllu'))
 
 
 def load_testset_ftb1u():
-    sentences = parse_conllu(open('data/test/ftb1/ftb1u_sample.tsv'))
-    return [conj_to_cconj(x) for x in sentences]
+    return parse_conllu(open('data/preprocessed/ftb1/ftb1u_sample.tsv'))
 
 
 def load_testset_ftb2_wikipedia():
-    return load_testset_ftb2('data/test/ftb2/FinnTreeBank_2/wikipedia-samples_tab.txt')
+    return parse_conllu(open('data/preprocessed/ftb2/FinnTreeBank_2/wikipedia-samples_tab.txt'))
 
 
 def load_testset_ftb2_news():
-    return load_testset_ftb2('data/test/ftb2/FinnTreeBank_2/news-samples_tab.txt')
+    return parse_conllu(open('data/preprocessed/ftb2/FinnTreeBank_2/news-samples_tab.txt'))
 
 
 def load_testset_ftb2_sofie():
-    return load_testset_ftb2('data/test/ftb2/FinnTreeBank_2/sofie12_tab.txt')
-
-
-def load_testset_ftb2(filename):
-    sentences = parse_conllu(open(filename))
-    bad, good = partition(sentences, lambda x: any('|' in y for y in x['pos']))
-    if bad:
-        logging.warning(f'Skipping {len(bad)} sentences with suspicious POS tags')
-        sentences = good
-
-    return map_ftb2_tags(sentences)
-
-
-def map_ftb2_tags(sentences):
-    tag_map = {
-        'A': 'ADJ',
-        'Abbr': 'X',
-        'Adp': 'ADP',
-        'Adv': 'ADV',
-        'CC': 'CCONJ',
-        'CS': 'SCONJ',
-        'INTERJ': 'INTJ',
-        'N': 'NOUN',
-        'Num': 'NUM',
-        'POST': 'X',
-        'Pron': 'PRON',
-        'Pun': 'PUNCT',
-        'V': 'VERB'
-    }
-
-    updated = []
-    for sent in sentences:
-        sent2 = sent.copy()
-        sent2['pos'] = [tag_map[x] for x in sent['pos']]
-        updated.append(sent2)
-    return updated
-
-
-def conj_to_cconj(sentence):
-    updated_pos = ['CCONJ' if x == 'CONJ' else x for x in sentence['pos']]
-    res = sentence.copy()
-    res['pos']= updated_pos
-    return res
-
-
-def partition(seq, condition):
-    true_partition = [x for x in seq if condition(x)]
-    false_partition = [x for x in seq if not condition(x)]
-    return (true_partition, false_partition)
+    return parse_conllu(open('data/preprocessed/ftb2/FinnTreeBank_2/sofie12_tab.txt'))
 
 
 def parse_conllu(f):

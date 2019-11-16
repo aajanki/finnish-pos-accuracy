@@ -32,6 +32,7 @@ pip install -r requirements.txt
 
 ./download_data.sh
 ./download_models.sh
+python preprocess_data.py
 ```
 
 ## Run
