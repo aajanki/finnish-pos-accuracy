@@ -179,7 +179,17 @@ def calculate_metrics(df, key_prefix):
 
 
 def normalize_lemmas(lemmas):
-    return [w.lower().replace('#', '') for w in lemmas]
+    norm = (w.lower().replace('#', '') for w in lemmas)
+    return [normalize_quotes(w) for w in norm]
+
+
+def normalize_quotes(word):
+    if word == '”' or word == '“':
+        return '"'
+    elif word == '’' or word == '‘':
+        return "'"
+    else:
+        return word
 
 
 def load_testset_ud_tdt():
