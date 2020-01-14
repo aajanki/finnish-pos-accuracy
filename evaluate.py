@@ -239,8 +239,11 @@ def parse_conllu(f):
             lemmas = []
             pos = []
 
-        tokens.append(fields[1])
-        lemmas.append(fields[2])
+        token = fields[1].replace(' ', '')
+        lemma = fields[2].replace(' ', '')
+
+        tokens.append(token)
+        lemmas.append(lemma)
         pos.append(fields[3])
 
     if tokens:
