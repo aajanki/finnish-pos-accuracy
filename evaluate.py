@@ -22,7 +22,8 @@ def main():
         StanfordNLP(),
         Voikko(),
         TurkuNeuralParser(),
-        FinnPos()
+        FinnPos(),
+        SpacyFiExperimental(),
     ]
 
     testsets = [

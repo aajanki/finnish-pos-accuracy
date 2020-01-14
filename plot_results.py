@@ -29,7 +29,7 @@ def main():
                              (full_results['Dataset'] == 'ftb1u'))]
 
     model_order = [
-        'Voikko', 'UDPipe-fi-tdt', 'StanfordNLP', 'Turku neural', 'FinnPos'
+        'Voikko', 'UDPipe-fi-tdt', 'StanfordNLP', 'Turku neural', 'FinnPos', 'spacy-fi'
     ]
 
     sns.barplot(x='model', y='Lemmatization error rate', data=results, order=model_order)

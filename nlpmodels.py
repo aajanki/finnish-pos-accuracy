@@ -5,6 +5,7 @@ import re
 import subprocess
 import time
 import requests
+import spacy
 import spacy_udpipe
 import stanfordnlp
 from spacy_stanfordnlp import StanfordNLPLanguage
@@ -273,8 +274,21 @@ class FinnPos():
         pass
 
 
+class SpacyFiExperimental():
+    def __init__(self):
+        self.name = 'spacy-fi'
+        self.nlp = spacy.load('fi_experimental_web_md')
+
+    def parse(self, tokens):
+        text = ' '.join(tokens)
+        return process_spacy(self.nlp, text)
+
+    def terminate(self):
+        pass
+
+
 def process_spacy(nlp, text):
-    doc = nlp(text)
+    doc = list(nlp.pipe([text], disable=['ner', 'parser']))[0]
     pos = [t.pos_ for t in doc]
     lemmas = [t.lemma_ for t in doc]
     return (lemmas, pos)
