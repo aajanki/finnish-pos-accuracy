@@ -287,7 +287,7 @@ def align_sequences(seq_a, seq_b):
 def write_errors(f, errors):
     for error in errors:
         f.write('\t')
-        f.write(' '.join(error[0]))
+        f.write(error[0])
         f.write('\n')
 
         f.write('exp\t')
