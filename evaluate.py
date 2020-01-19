@@ -79,14 +79,17 @@ def main():
 def evaluate_model(model, sentences):
     t0 = time.time()
 
+    texts = [x['tokens'] for x in sentences]
+    predicted = model.parse(texts)
+    assert len(predicted) == len(sentences)
+    
     lemma_matches = []
     lemma_errors = []
     pos_matches = []
     pos_errors = []
-    for sent in sentences:
-        observed_lemmas, observed_pos = model.parse(sent['tokens'])
-
+    for sent, pred in zip(sentences, predicted):
         expected_lemmas = sent['lemmas']
+        observed_lemmas = pred['lemmas']
         matches = count_sequence_matches(
             normalize_lemmas(expected_lemmas),
             normalize_lemmas(observed_lemmas))
@@ -96,6 +99,7 @@ def evaluate_model(model, sentences):
             lemma_errors.append((sent['tokens'], observed_lemmas, expected_lemmas))
 
         expected_pos = sent['pos']
+        observed_pos = pred['pos']
         matches = count_sequence_matches(expected_pos, observed_pos)
         pos_matches.append(matches)
 

@@ -1,4 +1,3 @@
-import io
 import logging
 import os
 import re
@@ -25,9 +24,9 @@ class UDPipe():
         self.name = f'UDPipe-{language}'
         self.nlp = spacy_udpipe.load(language)
 
-    def parse(self, tokens):
-        text = ' '.join(tokens)
-        return process_spacy(self.nlp, text)
+    def parse(self, texts):
+        joined_texts = [' '.join(t) for t in texts]
+        return process_spacy(self.nlp, joined_texts)
 
     def terminate(self):
         pass
@@ -39,9 +38,9 @@ class StanfordNLP():
         self.snlp = stanfordnlp.Pipeline(lang='fi', models_dir='data/stanfordnlp_resources')
         self.nlp = StanfordNLPLanguage(self.snlp)
 
-    def parse(self, tokens):
-        text = ' '.join(tokens)
-        return process_spacy(self.nlp, text)
+    def parse(self, texts):
+        joined_texts = [' '.join(t) for t in texts]
+        return process_spacy(self.nlp, joined_texts)
 
     def terminate(self):
         pass
@@ -71,15 +70,17 @@ class Voikko():
             'etuliite': 'X'
         }
 
-    def parse(self, tokens):
-        lemmas = []
-        pos = []
-        for t in tokens:
-            analyzed = self.voikko.analyze(t)
-            lemmas.append(self.analyzed_to_lemma(analyzed, t))
-            pos.append(self.analyzed_to_pos_tag(analyzed, t))
-
-        return lemmas, pos
+    def parse(self, texts):
+        res = []
+        for text in texts:
+            lemmas = []
+            pos = []
+            for t in text:
+                analyzed = self.voikko.analyze(t)
+                lemmas.append(self.analyzed_to_lemma(analyzed, t))
+                pos.append(self.analyzed_to_pos_tag(analyzed, t))
+            res.append({'lemmas': lemmas, 'pos': pos})
+        return res
 
     def analyzed_to_lemma(self, analyzed, orig):
         if analyzed:
@@ -132,25 +133,31 @@ class TurkuNeuralParser():
         self.container_name = None
         self.start_server()
 
-    def parse(self, words):
-        tokens = self.nlp(' '.join(words))
-        pos = [t.pos_ for t in tokens]
-        lemmas = [t.lemma_ for t in tokens]
-        return (lemmas, pos)
+    def parse(self, texts):
+        res = []
+        input_lines = '\n\n'.join(' '.join(text) for text in texts)
+        response = self._send_request(input_lines)
+        if len(sentences) == len(texts) + 1:
+            assert sentences[-1] == ''
+            sentences.pop(-1)
 
-    def nlp(self, text):
-        tokens = []
-        response = self._send_request(text)
-        for line in io.StringIO(response).readlines():
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
+        for sentence in response.split('\n\n'):
+            lemmas = []
+            pos = []
+            for line in sentence.split('\n'):
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
 
-            fields = line.split('\t')
-            assert len(fields) == 10
-            tokens.append(PosLemmaToken(fields[3], fields[2]))
+                fields = line.split('\t')
+                assert len(fields) == 10
 
-        return tokens
+                lemmas.append(fields[2])
+                pos.append(fields[3])
+
+            res.append({'lemmas': lemmas, 'pos': pos})
+
+        return res
 
     def start_server(self):
         if self.container_name is not None:
@@ -213,32 +220,34 @@ class FinnPos():
     def __init__(self):
         self.name = 'FinnPos'
 
-    def parse(self, words):
-        tokens = self.nlp(words)
-        pos = [t.pos_ for t in tokens]
-        lemmas = [t.lemma_ for t in tokens]
-        return (lemmas, pos)
-
-    def nlp(self, tokens):
-        text='\n'.join(tokens)
-        p = subprocess.run(['data/FinnPos/bin/ftb-label'], input=text,
+    def parse(self, texts):
+        token_lines = '\n\n'.join('\n'.join(text) for text in texts)
+        p = subprocess.run(['data/FinnPos/bin/ftb-label'], input=token_lines,
                            stdout=subprocess.PIPE, encoding='utf-8', check=True)
+        sentences = p.stdout.split('\n\n')
+        if len(sentences) == len(texts) + 1:
+            assert sentences[-1] == ''
+            sentences.pop(-1)
 
-        tokens = []
-        for line in p.stdout.split('\n'):
-            line = line.strip()
-            if not line:
-                continue
+        res = []
+        for sentence in sentences:
+            lemmas = []
+            pos = []
+            for token in sentence.split('\n'):
+                token = token.strip()
+                if not token:
+                    continue
 
-            columns = line.split('\t')
-            assert len(columns) == 5, 'Unexpected number of columns ' \
-                f'in the ftb-label output. Expected 5, got {len(columns)}'
+                columns = token.split('\t')
+                assert len(columns) == 5, 'Unexpected number of columns ' \
+                    f'in the ftb-label output. Expected 5, got {len(columns)}'
 
-            lemma = columns[2]
-            pos = self._finnpos_to_upos(columns[3])
-            tokens.append(PosLemmaToken(pos, lemma))
+                lemmas.append(columns[2])
+                pos.append(self._finnpos_to_upos(columns[3]))
 
-        return tokens
+            res.append({'lemmas': lemmas, 'pos': pos})
+
+        return res
 
     def _finnpos_to_upos(self, tag):
         if tag.startswith('[POS=NOUN]') and '[PROPER=PROPER]' in tag:
@@ -279,16 +288,17 @@ class SpacyFiExperimental():
         self.name = 'spacy-fi'
         self.nlp = spacy.load('fi_experimental_web_md')
 
-    def parse(self, tokens):
-        text = ' '.join(tokens)
-        return process_spacy(self.nlp, text)
+    def parse(self, texts):
+        joined_texts = [' '.join(t) for t in texts]
+        return process_spacy(self.nlp, joined_texts)
 
     def terminate(self):
         pass
 
 
-def process_spacy(nlp, text):
-    doc = list(nlp.pipe([text], disable=['ner', 'parser']))[0]
-    pos = [t.pos_ for t in doc]
-    lemmas = [t.lemma_ for t in doc]
-    return (lemmas, pos)
+def process_spacy(nlp, texts):
+    docs = list(nlp.pipe(texts, disable=['ner', 'parser']))
+    return [{
+        'lemmas': [t.lemma_ for t in doc],
+        'pos': [t.pos_ for t in doc]
+    } for doc in docs]
