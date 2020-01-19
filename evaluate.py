@@ -79,7 +79,7 @@ def main():
 def evaluate_model(model, sentences):
     t0 = time.time()
 
-    texts = [x['tokens'] for x in sentences]
+    texts = [x['text'] for x in sentences]
     predicted = model.parse(texts)
     assert len(predicted) == len(sentences)
     
@@ -96,7 +96,7 @@ def evaluate_model(model, sentences):
         lemma_matches.append(matches)
 
         if matches['matches'] != matches['gold_length']:
-            lemma_errors.append((sent['tokens'], observed_lemmas, expected_lemmas))
+            lemma_errors.append((sent['text'], observed_lemmas, expected_lemmas))
 
         expected_pos = sent['pos']
         observed_pos = pred['pos']
@@ -104,7 +104,7 @@ def evaluate_model(model, sentences):
         pos_matches.append(matches)
 
         if matches['matches'] != matches['gold_length']:
-            pos_errors.append((sent['tokens'], observed_pos, expected_pos))
+            pos_errors.append((sent['text'], observed_pos, expected_pos))
 
     duration = time.time() - t0
     sentences_per_s = len(sentences)/duration
@@ -237,7 +237,9 @@ def parse_conllu(f):
         if sid == '1':
             # sentence boundary
             if tokens:
-                sentences.append({'tokens': tokens, 'lemmas': lemmas, 'pos': pos})
+                sentences.append({
+                    'text': ''.join(tokens).rstrip(' '), 'lemmas': lemmas, 'pos': pos
+                })
 
             tokens = []
             lemmas = []
@@ -245,19 +247,25 @@ def parse_conllu(f):
 
         token = fields[1].replace(' ', '')
         lemma = fields[2].replace(' ', '')
+        space_after = fields[9] != 'SpaceAfter=No'
+
+        if space_after:
+            token = token + ' '
 
         tokens.append(token)
         lemmas.append(lemma)
         pos.append(fields[3])
 
     if tokens:
-        sentences.append({'tokens': tokens, 'lemmas': lemmas, 'pos': pos})
+        sentences.append({
+            'text': ''.join(tokens).rstrip(' '), 'lemmas': lemmas, 'pos': pos
+        })
 
     return sentences
 
 
 def count_tokens(sentences):
-    return np.sum([len(x['tokens']) for x in sentences])
+    return np.sum([len(x['lemmas']) for x in sentences])
 
 
 def align_sequences(seq_a, seq_b):

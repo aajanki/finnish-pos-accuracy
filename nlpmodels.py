@@ -25,8 +25,7 @@ class UDPipe():
         self.nlp = spacy_udpipe.load(language)
 
     def parse(self, texts):
-        joined_texts = [' '.join(t) for t in texts]
-        return process_spacy(self.nlp, joined_texts)
+        return process_spacy(self.nlp, texts)
 
     def terminate(self):
         pass
@@ -39,8 +38,7 @@ class StanfordNLP():
         self.nlp = StanfordNLPLanguage(self.snlp)
 
     def parse(self, texts):
-        joined_texts = [' '.join(t) for t in texts]
-        return process_spacy(self.nlp, joined_texts)
+        return process_spacy(self.nlp, texts)
 
     def terminate(self):
         pass
@@ -75,12 +73,18 @@ class Voikko():
         for text in texts:
             lemmas = []
             pos = []
-            for t in text:
+            for t in self.tokenize(text):
                 analyzed = self.voikko.analyze(t)
                 lemmas.append(self.analyzed_to_lemma(analyzed, t))
                 pos.append(self.analyzed_to_pos_tag(analyzed, t))
             res.append({'lemmas': lemmas, 'pos': pos})
         return res
+
+    def tokenize(self, text):
+        return [
+            t.tokenText for t in self.voikko.tokens(text)
+            if t.tokenTypeName != 'WHITESPACE'
+        ]
 
     def analyzed_to_lemma(self, analyzed, orig):
         if analyzed:
@@ -135,13 +139,13 @@ class TurkuNeuralParser():
 
     def parse(self, texts):
         res = []
-        input_lines = '\n\n'.join(' '.join(text) for text in texts)
-        response = self._send_request(input_lines)
+        response = self._send_request('\n\n'.join(texts))
+        sentences = response.split('\n\n')
         if len(sentences) == len(texts) + 1:
             assert sentences[-1] == ''
             sentences.pop(-1)
 
-        for sentence in response.split('\n\n'):
+        for sentence in sentences:
             lemmas = []
             pos = []
             for line in sentence.split('\n'):
@@ -219,9 +223,10 @@ class TurkuNeuralParser():
 class FinnPos():
     def __init__(self):
         self.name = 'FinnPos'
+        self.voikko = libvoikko.Voikko('fi')
 
     def parse(self, texts):
-        token_lines = '\n\n'.join('\n'.join(text) for text in texts)
+        token_lines = '\n\n'.join('\n'.join(self.tokenize(text)) for text in texts)
         p = subprocess.run(['data/FinnPos/bin/ftb-label'], input=token_lines,
                            stdout=subprocess.PIPE, encoding='utf-8', check=True)
         sentences = p.stdout.split('\n\n')
@@ -248,6 +253,12 @@ class FinnPos():
             res.append({'lemmas': lemmas, 'pos': pos})
 
         return res
+
+    def tokenize(self, text):
+        return [
+            t.tokenText for t in self.voikko.tokens(text)
+            if t.tokenTypeName != 'WHITESPACE'
+        ]
 
     def _finnpos_to_upos(self, tag):
         if tag.startswith('[POS=NOUN]') and '[PROPER=PROPER]' in tag:
@@ -289,8 +300,7 @@ class SpacyFiExperimental():
         self.nlp = spacy.load('fi_experimental_web_md')
 
     def parse(self, texts):
-        joined_texts = [' '.join(t) for t in texts]
-        return process_spacy(self.nlp, joined_texts)
+        return process_spacy(self.nlp, texts)
 
     def terminate(self):
         pass
