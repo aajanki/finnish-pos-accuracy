@@ -190,9 +190,8 @@ class TurkuNeuralParser():
                             'the Turku-neural-parser docker container')
 
         subprocess.run(command, check=True)
+        self._warmup()
         self.container_name = container_name
-
-        time.sleep(30)
 
     def stop_server(self):
         if self.container_name is None:
@@ -217,6 +216,10 @@ class TurkuNeuralParser():
 
     def sudo_needed(self):
         return os.environ.get('DOCKER_NEEDS_SUDO') is not None
+
+    def _warmup(self):
+        time.sleep(5)
+        self._send_request('ABC, kissa kävelee')
 
     def _send_request(self, text):
         logging.debug(f'Sending request: {text}')
