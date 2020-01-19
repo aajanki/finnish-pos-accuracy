@@ -140,10 +140,7 @@ class TurkuNeuralParser():
     def parse(self, texts):
         res = []
         response = self._send_request('\n\n'.join(texts))
-        sentences = response.split('\n\n')
-        if len(sentences) == len(texts) + 1:
-            assert sentences[-1] == ''
-            sentences.pop(-1)
+        sentences = self.split_sentences(response)
 
         for sentence in sentences:
             lemmas = []
@@ -162,6 +159,18 @@ class TurkuNeuralParser():
             res.append({'lemmas': lemmas, 'pos': pos})
 
         return res
+
+    def split_sentences(self, response):
+        sentences = []
+        for block in response.split('\n\n'):
+            if block.startswith('# newpar') or not sentences:
+                # sentence boundary
+                sentences.append(block)
+            else:
+                # sentence continues
+                sentences[-1] = sentences[-1] + block
+
+        return sentences
 
     def start_server(self):
         if self.container_name is not None:
