@@ -184,7 +184,7 @@ def calculate_metrics(df, key_prefix):
 
 
 def normalize_lemmas(lemmas):
-    norm = (w.lower().replace('#', '') for w in lemmas)
+    norm = (w.lower().replace('#', '').replace('-', '') for w in lemmas)
     return [normalize_quotes(w) for w in norm]
 
 
