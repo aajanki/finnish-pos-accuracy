@@ -27,7 +27,7 @@ def main():
 
 def preprocess_ftb1u(filename, inputdir, destdir):
     tag_map = {'CONJ': 'CCONJ'}
-    preprocess(filename, inputdir, destdir, tag_map)
+    preprocess(filename, inputdir, destdir, tag_map, aux_from_deprel=True)
 
 
 def preprocess_ftb2(filename, inputdir, destdir):
@@ -46,14 +46,14 @@ def preprocess_ftb2(filename, inputdir, destdir):
         'Pun': 'PUNCT',
         'V': 'VERB'
     }
-    preprocess(filename, inputdir, destdir, tag_map)
+    preprocess(filename, inputdir, destdir, tag_map, aux_from_deprel=True)
 
 
 def preprocess_ud_tdt(filename, inputdir, destdir):
-    preprocess(filename, inputdir, destdir, {})
+    preprocess(filename, inputdir, destdir, {}, aux_from_deprel=False)
 
 
-def preprocess(filename, inputdir, destdir, tag_map):
+def preprocess(filename, inputdir, destdir, tag_map, aux_from_deprel):
     in_path = os.path.join(inputdir, filename)
     out_path = os.path.join(destdir, filename)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
@@ -64,6 +64,7 @@ def preprocess(filename, inputdir, destdir, tag_map):
     num_bad_tokens = 0
     num_multiword_tokens = 0
     num_empty_tokens = 0
+    num_non_verb_aux = 0
 
     with open(in_path, 'r', encoding='utf-8') as inf, \
          open(out_path, 'w', encoding='utf-8') as outf:
@@ -96,6 +97,12 @@ def preprocess(filename, inputdir, destdir, tag_map):
 
                 cols[3] = tag_map.get(cols[3], cols[3])
 
+                if aux_from_deprel and cols[7] in ['aux', 'aux:pass', 'cop']:
+                    if cols[3] in ['VERB', 'AUX']:
+                        cols[3] = 'AUX'
+                    else:
+                        num_non_verb_aux += 1
+
                 outf.write('\t'.join(cols))
                 outf.write('\n')
             outf.write('\n')
@@ -105,6 +112,8 @@ def preprocess(filename, inputdir, destdir, tag_map):
         logging.warning(f'Skipped {num_bad_sentences} sentences with invalid POS tags')
     if num_bad_tokens > 0:
         logging.warning(f'Skipped {num_bad_tokens} tokens that had too few columns')
+    if num_non_verb_aux > 0:
+        logging.warning(f'Leaving {num_non_verb_aux} non-verb AUX tags unchanged')
     if num_multiword_tokens > 0:
         logging.info(f'Skipped {num_multiword_tokens} multiword tokens')
     if num_empty_tokens > 0:
