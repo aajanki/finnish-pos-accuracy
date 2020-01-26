@@ -3,8 +3,8 @@ numpy
 pandas
 request
 seaborn
-spacy-udpipe==0.0.4
+spacy-udpipe==0.1.0
 spacy-stanfordnlp==0.1.3
-https://github.com/aajanki/spacy-fi/releases/download/v0.1.0/fi_experimental_web_md-0.1.0-py3-none-any.whl
+https://github.com/aajanki/spacy-fi/releases/download/v0.2.0/fi_experimental_web_md-0.2.0-py3-none-any.whl
 wheel
 voikko==0.5
