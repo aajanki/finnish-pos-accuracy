@@ -17,7 +17,9 @@ def main():
         load_results('ftb2-sofie'),
         load_results('ftb2-wikipedia')
     ])
-    full_results['model'] = full_results['model'].replace('Turku-neural-parser', 'Turku neural')
+    full_results['model'] = (full_results['model']
+                             .replace('Turku-neural-parser', 'Turku parser')
+                             .replace('UDPipe-fi-tdt', 'UDPipe'))
     full_results = full_results.rename(columns={
         'Lemmatization WER': 'Lemmatization error rate',
         'UPOS WER': 'Part-of-speech error rate'
@@ -29,11 +31,13 @@ def main():
                              (full_results['Dataset'] == 'ftb1u'))]
 
     model_order = [
-        'Voikko', 'UDPipe-fi-tdt', 'StanfordNLP', 'Turku neural', 'FinnPos', 'spacy-fi'
+        'Voikko', 'UDPipe', 'StanfordNLP', 'Turku parser', 'FinnPos', 'spacy-fi'
     ]
 
     sns.barplot(x='model', y='Lemmatization error rate', data=results, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
+    for tick in plt.gca().xaxis.get_major_ticks():
+        tick.label.set_fontsize(9)
     plt.xlabel('')
     plt.savefig(os.path.join(imagedir, 'lemma_wer.png'))
     plt.close()
@@ -41,23 +45,31 @@ def main():
     sns.barplot(x='model', y='Lemmatization error rate', hue='Dataset',
                 data=full_results, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
+    for tick in plt.gca().xaxis.get_major_ticks():
+        tick.label.set_fontsize(9)
     plt.xlabel('')
     plt.savefig(os.path.join(imagedir, 'lemma_wer_by_dataset.png'))
     plt.close()
 
     sns.barplot(x='model', y='Lemmatization aligned accuracy', data=results, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
+    for tick in plt.gca().xaxis.get_major_ticks():
+        tick.label.set_fontsize(9)
     plt.xlabel('')
     plt.savefig(os.path.join(imagedir, 'lemma_acc.png'))
     plt.close()
 
     sns.barplot(x='model', y='Lemmatization F1', data=results, order=model_order)
+    for tick in plt.gca().xaxis.get_major_ticks():
+        tick.label.set_fontsize(9)
     plt.xlabel('')
     plt.savefig(os.path.join(imagedir, 'lemma_f1.png'))
     plt.close()
 
     sns.barplot(x='model', y='Part-of-speech error rate', data=results, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
+    for tick in plt.gca().xaxis.get_major_ticks():
+        tick.label.set_fontsize(9)
     plt.xlabel('')
     plt.savefig(os.path.join(imagedir, 'pos_wer.png'))
     plt.close()
@@ -65,17 +77,23 @@ def main():
     sns.barplot(x='model', y='Part-of-speech error rate', hue='Dataset',
                 data=full_results, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
+    for tick in plt.gca().xaxis.get_major_ticks():
+        tick.label.set_fontsize(9)
     plt.xlabel('')
     plt.savefig(os.path.join(imagedir, 'pos_wer_by_dataset.png'))
     plt.close()
 
     sns.barplot(x='model', y='UPOS aligned accuracy', data=results, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
+    for tick in plt.gca().xaxis.get_major_ticks():
+        tick.label.set_fontsize(9)
     plt.xlabel('')
     plt.savefig(os.path.join(imagedir, 'pos_acc.png'))
     plt.close()
 
     sns.barplot(x='model', y='UPOS F1', data=results, order=model_order)
+    for tick in plt.gca().xaxis.get_major_ticks():
+        tick.label.set_fontsize(9)
     plt.xlabel('')
     plt.savefig(os.path.join(imagedir, 'pos_f1.png'))
     plt.close()
@@ -89,12 +107,8 @@ def main():
     for x, y, text in zip(results_by_model['Lemmatization error rate'],
                             results_by_model['Duration per 1000 sentences (s)'],
                             results_by_model['model']):
-        if text == 'Turku neural':
-            ha = 'left'
-            textrelx = 5
-        else:
-            ha = 'right'
-            textrelx = -5
+        ha = 'right'
+        textrelx = -5
         plt.annotate(text, (x, y), xytext=(textrelx, 0), textcoords='offset points',
                      horizontalalignment=ha, verticalalignment='center')
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
@@ -108,12 +122,8 @@ def main():
     for x, y, text in zip(results_by_model['Part-of-speech error rate'],
                           results_by_model['Duration per 1000 sentences (s)'],
                           results_by_model['model']):
-        if text == 'FinnPos':
-            ha = 'left'
-            textrelx = 5
-        else:
-            ha = 'right'
-            textrelx = -5
+        ha = 'right'
+        textrelx = -5
         plt.annotate(text, (x, y), xytext=(textrelx, 0), textcoords='offset points',
                      horizontalalignment=ha, verticalalignment='center')
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))

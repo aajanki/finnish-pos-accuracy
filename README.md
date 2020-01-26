@@ -10,6 +10,7 @@ source Finnish part-of-speech taggers and lemmatization algorihtms.
 * [UDPipe](http://ufal.mff.cuni.cz/udpipe) (through spacy-udpipe)
 * [StanfordNLP](https://stanfordnlp.github.io/stanfordnlp/) (through spacy-stanfordnlp)
 * [Voikko](https://voikko.puimula.org/)
+* [Experimental Finnish model for spaCy](https://github.com/aajanki/spacy-fi)
 
 ### Test datasets
 
@@ -50,7 +51,7 @@ python evaluate.py
 python plot_results.py
 ```
 
-The numerical results will be saved in results/evaluation.csv, POS and
+The numerical results will be saved in results/evaluation*.csv, POS and
 lemma errors made by each model will be saved in results/errorcases,
 and plots will be saved in results/images.
 
@@ -58,34 +59,37 @@ and plots will be saved in results/images.
 
 ### Lemmatization
 
-![Lemmatization error rates](images/lemma_wer.png)
+![Lemmatization error rates](images/lemma_wer_by_dataset.png)
 
 Lemmatization error rates (proportion of tokens where the predicted
-lemma differs from the ground truth lemma) for the tested algorithms.
-The error bars are standard deviations over datasets.
+lemma differs from the ground truth lemma) for the tested algorithms
+on the test datasets.
 
 ![Lemmatization speed](images/lemma_speed.png)
 
-Execution duration as a function of the achieved error rate. Lower
-values are better on both axes. Notice that the Y-axis is on log
-scale.
+Execution duration as a function of the average (over datasets) error
+rate. Lower values are better on both axes. Notice that the Y-axis is
+on log scale.
 
-Improvements seem to require exponentially more computation. Halving
-the error rate from 14% (Voikko) to 7% (FinnPos/Turku neural parser)
-increases the computational effort more than 1000-fold! All algorihtms
-are tested on CPU (4-core Intel Core Skylake i5). Turku neural parser
-and StanfordNLP can be run on a GPU which most likely improves their
-performance, but I haven't tested that.
+The execution duration is measured as a batched evaluation (a batch
+contains all sentences from one dataset) on a 4 core CPU. Turku neural
+parser and StanfordNLP can be run on a GPU which most likely improves
+their performance, but I haven't tested that.
 
 ### Part-of-speech tagging
 
-![Part-of-speech error rates](images/pos_wer.png)
+![Part-of-speech error rates](images/pos_wer_by_dataset.png)
 
 Part-of-speech error rates for the tested algorithms.
 
+Note that FinnPos and Voikko do not make a distinction between
+auxiliary and main verbs and therefore their performance suffers by
+4-5% in this evaluation as they mispredict all AUX tags as VERBs.
+
 ![Part-of-speech speed](images/pos_speed.png)
 
-Execution duration as a function of the achieved error rate.
+Execution duration as a function of the average error rate.
 
-After a certain point, increasing the computational effort provides
-only minimal accuracy gains.
+Comparing spacy-fi and StanfordNLP results, it seems that increasing
+the computational effort about 100-fold seems to improve the accuracy
+only by a small amount.
