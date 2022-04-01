@@ -8,7 +8,7 @@ source Finnish part-of-speech taggers and lemmatization algorihtms.
 * [Turku neural parser pipeline](https://turkunlp.org/Turku-neural-parser-pipeline/)
 * [FinnPos](https://github.com/mpsilfve/FinnPos/wiki)
 * [UDPipe](http://ufal.mff.cuni.cz/udpipe) (through spacy-udpipe)
-* [StanfordNLP](https://stanfordnlp.github.io/stanfordnlp/) (through spacy-stanfordnlp)
+* [Stanza](https://stanfordnlp.github.io/stanza/)
 * [Voikko](https://voikko.puimula.org/)
 * [Experimental Finnish model for spaCy](https://github.com/aajanki/spacy-fi)
 

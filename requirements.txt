@@ -4,8 +4,8 @@ pandas
 requests==2.27.1
 seaborn
 spacy-udpipe==1.0.0
-spacy-stanfordnlp==0.1.3
 spacy==3.2.4
 spacy_fi_experimental_web_md==0.9.0
 voikko==0.5
 typer==0.4.1
+stanza==1.3.0

@@ -6,20 +6,19 @@ import time
 import requests
 import spacy
 import spacy_udpipe
-import stanfordnlp
-from spacy_stanfordnlp import StanfordNLPLanguage
+import stanza
 from voikko import libvoikko
 
 inflection_postfix_re = re.compile(r'(.{2,}):\w{1,4}$')
 
 
-class PosLemmaToken():
+class PosLemmaToken:
     def __init__(self, pos, lemma):
         self.pos_ = pos
         self.lemma_ = lemma
 
 
-class UDPipe():
+class UDPipe:
     def __init__(self, language='fi-tdt'):
         self.name = f'UDPipe-{language}'
         self.nlp = spacy_udpipe.load(language)
@@ -31,20 +30,7 @@ class UDPipe():
         pass
 
 
-class StanfordNLP():
-    def __init__(self):
-        self.name = 'StanfordNLP'
-        self.snlp = stanfordnlp.Pipeline(lang='fi', models_dir='data/stanfordnlp_resources')
-        self.nlp = StanfordNLPLanguage(self.snlp)
-
-    def parse(self, texts):
-        return process_spacy(self.nlp, texts)
-
-    def terminate(self):
-        pass
-
-
-class Voikko():
+class Voikko:
     def __init__(self):
         self.name = 'Voikko'
         self.voikko = libvoikko.Voikko('fi')
@@ -129,7 +115,7 @@ class Voikko():
         return (analyzed[i].get('BASEFORM', orig), analyzed[i].get('CLASS', 'X'))
 
 
-class TurkuNeuralParser():
+class TurkuNeuralParser:
     def __init__(self):
         self.name = 'Turku-neural-parser'
         self.docker_tag = '1.0.2-fi-en-sv-cpu'
@@ -233,7 +219,7 @@ class TurkuNeuralParser():
         return r.text
 
 
-class FinnPos():
+class FinnPos:
     def __init__(self):
         self.name = 'FinnPos'
         self.voikko = libvoikko.Voikko('fi')
@@ -307,7 +293,31 @@ class FinnPos():
         pass
 
 
-class SpacyFiExperimental():
+class Stanza:
+    def __init__(self):
+        self.name = 'stanza'
+        self.nlp = stanza.Pipeline(lang='fi',
+                                   dir='data/stanza_resources',
+                                   processors='tokenize,mwt,pos,lemma')
+
+    def parse(self, texts):
+        in_docs = [stanza.Document([], text=t) for t in texts]
+        res = []
+        for doc in self.nlp(in_docs):
+            lemmas = []
+            pos = []
+            for sent in doc.sentences:
+                for w in sent.words:
+                    lemmas.append(w.lemma)
+                    pos.append(w.pos)
+            res.append({'lemmas': lemmas, 'pos': pos})
+        return res
+
+    def terminate(self):
+        pass
+
+
+class SpacyFiExperimental:
     def __init__(self):
         self.name = 'spacy-fi'
         self.nlp = spacy.load('spacy_fi_experimental_web_md')

@@ -21,11 +21,11 @@ def main(models: Optional[str] = typer.Option(None, help='comma-separated list o
     selected_models = [
         UDPipe('fi-tdt'),
         #UDPipe('fi'),
-        #StanfordNLP(),
         Voikko(),
         TurkuNeuralParser(),
         FinnPos(),
         SpacyFiExperimental(),
+        Stanza(),
     ]
 
     if models:

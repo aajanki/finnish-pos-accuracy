@@ -1,9 +1,9 @@
 import os
 import spacy_udpipe
-import stanfordnlp
+import stanza
 
 spacy_udpipe.download('fi-tdt')
 spacy_udpipe.download('fi')
 
-os.makedirs('data/stanfordnlp_resources', exist_ok=True)
-stanfordnlp.download('fi_tdt', resource_dir='data/stanfordnlp_resources', force=True)
+os.makedirs('data/stanza_resources', exist_ok=True)
+stanza.download('fi', model_dir='data/stanza_resources')
