@@ -29,6 +29,7 @@ Create a Python virtual environment and download test data and models by running
 ```
 python3 -m venv venv
 source venv/bin/activate
+pip install wheel
 pip install -r requirements.txt
 
 ./download_data.sh

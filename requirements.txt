@@ -1,10 +1,11 @@
 alignment==1.0.10
 numpy
 pandas
-request
+requests==2.27.1
 seaborn
-spacy-udpipe==0.1.0
+spacy-udpipe==1.0.0
 spacy-stanfordnlp==0.1.3
-https://github.com/aajanki/spacy-fi/releases/download/v0.2.0/fi_experimental_web_md-0.2.0-py3-none-any.whl
-wheel
+spacy==3.2.4
+spacy_fi_experimental_web_md==0.9.0
 voikko==0.5
+typer==0.4.1

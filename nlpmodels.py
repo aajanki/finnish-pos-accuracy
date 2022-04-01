@@ -135,9 +135,10 @@ class TurkuNeuralParser():
         self.docker_tag = '1.0.2-fi-en-sv-cpu'
         self.port = 15000
         self.container_name = None
-        self.start_server()
 
     def parse(self, texts):
+        self.start_server()
+
         res = []
         response = self._send_request('\n\n'.join(texts))
         sentences = self.split_sentences(response)
@@ -309,7 +310,7 @@ class FinnPos():
 class SpacyFiExperimental():
     def __init__(self):
         self.name = 'spacy-fi'
-        self.nlp = spacy.load('fi_experimental_web_md')
+        self.nlp = spacy.load('spacy_fi_experimental_web_md')
 
     def parse(self, texts):
         return process_spacy(self.nlp, texts)
@@ -319,7 +320,7 @@ class SpacyFiExperimental():
 
 
 def process_spacy(nlp, texts):
-    docs = list(nlp.pipe(texts, disable=['ner', 'parser']))
+    docs = list(nlp.pipe(texts, disable=['ner', 'parser', 'morphologizer']))
     return [{
         'lemmas': [t.lemma_ for t in doc],
         'pos': [t.pos_ for t in doc]

@@ -4,27 +4,37 @@ import os
 import os.path
 import numpy as np
 import pandas as pd
+import typer
 from alignment.sequence import Sequence
 from alignment.vocabulary import Vocabulary
 from alignment.sequencealigner import SimpleScoring, StrictGlobalSequenceAligner
 from nlpmodels import *
+from typing import Optional
 
 
-def main():
+def main(models: Optional[str] = typer.Option(None, help='comma-separated list of models to evaluate')):
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
     outputdir = 'results'
     errorcasedir = 'results/errorcases'
 
-    models = [
+    selected_models = [
         UDPipe('fi-tdt'),
         #UDPipe('fi'),
-        StanfordNLP(),
+        #StanfordNLP(),
         Voikko(),
         TurkuNeuralParser(),
         FinnPos(),
         SpacyFiExperimental(),
     ]
+
+    if models:
+        models_list = models.split(',')
+        selected_models = [m for m in selected_models if m.name in models_list]
+        selected_names = set(m.name for m in selected_models)
+
+        if set(models_list) - selected_names:
+            raise ValueError(f'Unknown model(s): {set(models_list) - selected_names}')
 
     testsets = [
         { 'name': 'UD_Finnish_TDT', 'load': load_testset_ud_tdt },
@@ -45,7 +55,7 @@ def main():
                   f'in {len(sentences)} sentences')
 
             evaluation_results = []
-            for model in models:
+            for model in selected_models:
                 print()
                 print(f'Evaluating {model.name} on {testset["name"]}')
 
@@ -68,11 +78,11 @@ def main():
                     write_errors(lemma_errors_file, lemma_errors)
                     write_errors(pos_errors_file, pos_errors)
 
-            df = pd.DataFrame(evaluation_results, index=[m.name for m in models])
+            df = pd.DataFrame(evaluation_results, index=[m.name for m in selected_models])
             df.to_csv(os.path.join(outputdir, f'evaluation_{testset["name"]}.csv'))
 
     finally:
-        for model in models:
+        for model in selected_models:
             model.terminate()
 
 
@@ -303,4 +313,4 @@ def write_errors(f, errors):
 
 
 if __name__ == '__main__':
-    main()
+    typer.run(main)
