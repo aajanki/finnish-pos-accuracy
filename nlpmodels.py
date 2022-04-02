@@ -1,9 +1,5 @@
-import logging
-import os
 import re
 import subprocess
-import time
-import requests
 import spacy
 import spacy_udpipe
 import stanza
@@ -21,19 +17,20 @@ class PosLemmaToken:
 class UDPipe:
     def __init__(self, language='fi-tdt'):
         self.name = f'UDPipe-{language}'
-        self.nlp = spacy_udpipe.load(language)
+        self.language = language
+        self.nlp = None
+
+    def initialize(self):
+        self.nlp = spacy_udpipe.load(self.language)
 
     def parse(self, texts):
         return process_spacy(self.nlp, texts)
-
-    def terminate(self):
-        pass
 
 
 class Voikko:
     def __init__(self):
         self.name = 'Voikko'
-        self.voikko = libvoikko.Voikko('fi')
+        self.voikko = None
         self.tag_map = {
             'nimisana': 'NOUN',
             'laatusana': 'ADJ',
@@ -53,6 +50,9 @@ class Voikko:
             'lukusana': 'NUM',
             'etuliite': 'X'
         }
+
+    def initialize(self):
+        self.voikko = libvoikko.Voikko('fi')
 
     def parse(self, texts):
         res = []
@@ -99,9 +99,6 @@ class Voikko:
 
         return tag
 
-    def terminate(self):
-        pass
-
     def _choose_baseform(self, analyzed, orig):
         if not analyzed:
             return (None, None)
@@ -118,17 +115,14 @@ class Voikko:
 class TurkuNeuralParser:
     def __init__(self):
         self.name = 'Turku-neural-parser'
-        self.docker_tag = '1.0.2-fi-en-sv-cpu'
-        self.port = 15000
-        self.container_name = None
+
+    def initialize(self):
+        self._process_sentences(['ABC, kissa kävelee'])
 
     def parse(self, texts):
-        self.start_server()
+        sentences = self._process_sentences(texts)
 
         res = []
-        response = self._send_request('\n\n'.join(texts))
-        sentences = self.split_sentences(response)
-
         for sentence in sentences:
             lemmas = []
             pos = []
@@ -150,7 +144,7 @@ class TurkuNeuralParser:
     def split_sentences(self, response):
         sentences = []
         for block in response.split('\n\n'):
-            if block.startswith('# newpar') or not sentences:
+            if block.startswith('# newpar') or block.startswith('# newdoc') or not sentences:
                 # sentence boundary
                 sentences.append(block)
             else:
@@ -159,69 +153,28 @@ class TurkuNeuralParser:
 
         return sentences
 
-    def start_server(self):
-        if self.container_name is not None:
-            return
+    def _process_sentences(self, texts):
+        command = [
+            'python', 'tnpp_parse.py',
+            '--conf', 'models_fi_tdt_dia/pipelines.yaml',
+            'parse_plaintext'
+        ]
+        p = subprocess.run(command, cwd='data/Turku-neural-parser-pipeline',
+                           input='\n\n'.join(texts), capture_output=True, text=True)
+        if p.returncode != 0:
+            print(f'Turku pipeline failed with return code {p.returncode}')
+            print(p.stderr)
+            raise RuntimeError('Turku pipeline failed')
 
-        container_name = 'turku_parser'
-        docker_image = f'turkunlp/turku-neural-parser:{self.docker_tag}'
-        command = ['docker', 'run', '--name', container_name, '-d',
-                   '-p', str(self.port) + ':7689', docker_image,
-                   'server', 'fi_tdt', 'parse_plaintext']
-
-        logging.info('starting the server')
-
-        if self.sudo_needed():
-            command = ['sudo'] + command
-            logging.warning('This might ask for the sudo password for launching '
-                            'the Turku-neural-parser docker container')
-
-        subprocess.run(command, check=True)
-        self._warmup()
-        self.container_name = container_name
-
-    def stop_server(self):
-        if self.container_name is None:
-            return
-
-        command_stop = ['docker', 'stop', self.container_name]
-        command_rm = ['docker', 'rm', self.container_name]
-
-        logging.info('stopping the server')
-        if self.sudo_needed():
-            command_stop = ['sudo'] + command_stop
-            command_rm = ['sudo'] + command_rm
-            logging.warning('This might ask for the sudo password for '
-                            'stopping the docker container')
-
-        subprocess.run(command_stop)
-        subprocess.run(command_rm)
-        self.container_name = None
-
-    def terminate(self):
-        self.stop_server()
-
-    def sudo_needed(self):
-        return os.environ.get('DOCKER_NEEDS_SUDO') is not None
-
-    def _warmup(self):
-        time.sleep(5)
-        self._send_request('ABC, kissa kävelee')
-
-    def _send_request(self, text):
-        logging.debug(f'Sending request: {text}')
-
-        server_url = f'http://localhost:{str(self.port)}'
-        r = requests.post(server_url,
-                          data=text.encode('utf-8'),
-                          headers={'Content-Type': 'text/plain; charset=utf-8'})
-        r.raise_for_status()
-        return r.text
+        return self.split_sentences(p.stdout)
 
 
 class FinnPos:
     def __init__(self):
         self.name = 'FinnPos'
+        self.voikko = None
+
+    def initialize(self):
         self.voikko = libvoikko.Voikko('fi')
 
     def parse(self, texts):
@@ -289,13 +242,13 @@ class FinnPos:
         else:
             assert False, f'Unknown tag: {tag}'
 
-    def terminate(self):
-        pass
-
 
 class Stanza:
     def __init__(self):
         self.name = 'stanza'
+        self.nlp = None
+
+    def initialize(self):
         self.nlp = stanza.Pipeline(lang='fi',
                                    dir='data/stanza_resources',
                                    processors='tokenize,mwt,pos,lemma')
@@ -313,20 +266,17 @@ class Stanza:
             res.append({'lemmas': lemmas, 'pos': pos})
         return res
 
-    def terminate(self):
-        pass
-
 
 class SpacyFiExperimental:
     def __init__(self):
         self.name = 'spacy-fi'
+        self.nlp = None
+
+    def initialize(self):
         self.nlp = spacy.load('spacy_fi_experimental_web_md')
 
     def parse(self, texts):
         return process_spacy(self.nlp, texts)
-
-    def terminate(self):
-        pass
 
 
 def process_spacy(nlp, texts):

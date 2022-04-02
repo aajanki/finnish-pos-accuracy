@@ -5,3 +5,4 @@ set -eu
 python download_models.py
 
 ./install_finnpos.sh
+./install-turku-pipeline.sh

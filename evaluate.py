@@ -12,7 +12,10 @@ from nlpmodels import *
 from typing import Optional
 
 
-def main(models: Optional[str] = typer.Option(None, help='comma-separated list of models to evaluate')):
+def main(
+        models: Optional[str] = typer.Option(None, help='comma-separated list of models to evaluate'),
+        testsets: Optional[str] = typer.Option(None, help='comma-separate list of testsets to evaluate'),
+):
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
     outputdir = 'results'
@@ -36,7 +39,7 @@ def main(models: Optional[str] = typer.Option(None, help='comma-separated list o
         if set(models_list) - selected_names:
             raise ValueError(f'Unknown model(s): {set(models_list) - selected_names}')
 
-    testsets = [
+    selected_testsets = [
         { 'name': 'UD_Finnish_TDT', 'load': load_testset_ud_tdt },
         { 'name': 'ftb1u', 'load': load_testset_ftb1u },
         { 'name': 'ftb2-news', 'load': load_testset_ftb2_news },
@@ -44,46 +47,54 @@ def main(models: Optional[str] = typer.Option(None, help='comma-separated list o
         { 'name': 'ftb2-wikipedia', 'load': load_testset_ftb2_wikipedia },
     ]
 
-    try:
-        os.makedirs(outputdir, exist_ok=True)
-        os.makedirs(errorcasedir, exist_ok=True)
-        for testset in testsets:
-            sentences = testset['load']()
+    if testsets:
+        testsets_list = testsets.split(',')
+        selected_testsets = [t for t in selected_testsets if t['name'] in testsets_list]
+        selected_names = set(t['name'] for t in selected_testsets)
 
-            print(f'Test set {testset["name"]}')
-            print(f'Test set size: {count_tokens(sentences)} test tokens '
-                  f'in {len(sentences)} sentences')
+        if set(testsets_list) - selected_names:
+            raise ValueError(f'Unknown testset(s): {set(testsets_list) - selected_names}')
 
-            evaluation_results = []
-            for model in selected_models:
-                print()
-                print(f'Evaluating {model.name} on {testset["name"]}')
+    for model in selected_models:
+        print(f'Initializing {model.name}')
+        model.initialize()
 
-                metrics, lemma_errors, pos_errors = \
-                    evaluate_model(model, sentences)
+    os.makedirs(outputdir, exist_ok=True)
+    os.makedirs(errorcasedir, exist_ok=True)
+    for testset in selected_testsets:
+        sentences = testset['load']()
 
-                print(f'Lemma WER: {metrics["Lemmatization WER"]:.3f}')
-                print(f'UPOS WER: {metrics["UPOS WER"]:.3f}')
-                print(f'Duration: {metrics["Duration"]:.1f} s '
-                      f'({metrics["Sentences per second"]:.1f} sentences/s)')
+        print()
+        print(f'Test set {testset["name"]}')
+        print(f'Test set size: {count_tokens(sentences)} test tokens '
+              f'in {len(sentences)} sentences')
 
-                evaluation_results.append(metrics)
-
-                le_filename = os.path.join(
-                    errorcasedir, f'lemma_erros_{model.name}_{testset["name"]}.txt')
-                pe_filename = os.path.join(
-                    errorcasedir, f'pos_erros_{model.name}_{testset["name"]}.txt')
-                with open(le_filename, 'w') as lemma_errors_file, \
-                     open(pe_filename, 'w') as pos_errors_file:
-                    write_errors(lemma_errors_file, lemma_errors)
-                    write_errors(pos_errors_file, pos_errors)
-
-            df = pd.DataFrame(evaluation_results, index=[m.name for m in selected_models])
-            df.to_csv(os.path.join(outputdir, f'evaluation_{testset["name"]}.csv'))
-
-    finally:
+        evaluation_results = []
         for model in selected_models:
-            model.terminate()
+            print()
+            print(f'Evaluating {model.name} on {testset["name"]}')
+
+            metrics, lemma_errors, pos_errors = \
+                evaluate_model(model, sentences)
+
+            print(f'Lemma WER: {metrics["Lemmatization WER"]:.3f}')
+            print(f'UPOS WER: {metrics["UPOS WER"]:.3f}')
+            print(f'Duration: {metrics["Duration"]:.1f} s '
+                  f'({metrics["Sentences per second"]:.1f} sentences/s)')
+
+            evaluation_results.append(metrics)
+
+            le_filename = os.path.join(
+                errorcasedir, f'lemma_erros_{model.name}_{testset["name"]}.txt')
+            pe_filename = os.path.join(
+                errorcasedir, f'pos_erros_{model.name}_{testset["name"]}.txt')
+            with open(le_filename, 'w') as lemma_errors_file, \
+                 open(pe_filename, 'w') as pos_errors_file:
+                write_errors(lemma_errors_file, lemma_errors)
+                write_errors(pos_errors_file, pos_errors)
+
+        df = pd.DataFrame(evaluation_results, index=[m.name for m in selected_models])
+        df.to_csv(os.path.join(outputdir, f'evaluation_{testset["name"]}.csv'))
 
 
 def evaluate_model(model, sentences):
