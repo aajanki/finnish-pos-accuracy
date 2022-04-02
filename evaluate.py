@@ -103,7 +103,10 @@ def evaluate_model(model, sentences):
     texts = [x['text'] for x in sentences]
     predicted = model.parse(texts)
     assert len(predicted) == len(sentences)
-    
+
+    duration = time.time() - t0
+    sentences_per_s = len(sentences)/duration
+
     lemma_matches = []
     lemma_errors = []
     pos_matches = []
@@ -126,9 +129,6 @@ def evaluate_model(model, sentences):
 
         if matches['matches'] != matches['gold_length']:
             pos_errors.append((sent['text'], observed_pos, expected_pos))
-
-    duration = time.time() - t0
-    sentences_per_s = len(sentences)/duration
 
     df_lemma = pd.DataFrame(lemma_matches)
     df_pos = pd.DataFrame(pos_matches)
