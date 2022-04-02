@@ -21,6 +21,6 @@ configargparse==1.5.3
 transformers==4.17.0
 OpenNMT-py==2.2.0
 git+https://github.com/TurkuNLP/diaparser.git@7b8fab0
-pytorch_lightning==1.4.9
+pytorch_lightning==1.6.0
 torchmetrics==0.7.3
 scikit-learn==1.0.2
