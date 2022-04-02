@@ -4,6 +4,7 @@ import spacy
 import spacy_udpipe
 import stanza
 import trankit
+import simplemma
 from voikko import libvoikko
 
 inflection_postfix_re = re.compile(r'(.{2,}):\w{1,4}$')
@@ -305,6 +306,26 @@ class Trankit:
 
             res.append({'lemmas': lemmas, 'pos': pos})
 
+        return res
+
+
+class Simplemma:
+    def __init__(self):
+        self.name = 'simplemma'
+        self.langdata = None
+
+    def initialize(self):
+        self.langdata = simplemma.load_data('fi')
+
+    def parse(self, texts):
+        res = []
+        for text in texts:
+            lemmas = [
+                simplemma.lemmatize(t, self.langdata)
+                for t in simplemma.simple_tokenizer(text)
+            ]
+            pos = []
+            res.append({'lemmas': lemmas, 'pos': pos})
         return res
 
 

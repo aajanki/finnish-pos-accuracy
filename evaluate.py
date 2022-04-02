@@ -30,6 +30,7 @@ def main(
         SpacyFiExperimental(),
         Stanza(),
         Trankit(),
+        Simplemma(),
     ]
 
     if models:
@@ -192,8 +193,14 @@ def calculate_metrics(df, key_prefix):
         N = x['substitutions'] + x['deletions'] + x['matches']
         wer = (x['substitutions'] + x['deletions'] + x['insertions'])/N
         recall = x['matches']/x['gold_length']
-        precision = x['matches']/x['predicted_length']
-        f1 = 2*recall*precision/(recall + precision)
+        if x['predicted_length'] > 0:
+            precision = x['matches']/x['predicted_length']
+        else:
+            precision = 0
+        if recall + precision > 0:
+            f1 = 2*recall*precision/(recall + precision)
+        else:
+            f1 = 0
         aligned_accuracy = x['matches']/x['aligned_length']
 
     return {

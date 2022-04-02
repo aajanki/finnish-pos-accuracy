@@ -31,7 +31,8 @@ def main():
                              (full_results['Dataset'] == 'ftb1u'))]
 
     model_order = [
-        'Voikko', 'UDPipe', 'stanza', 'Turku parser', 'FinnPos', 'spacy-fi', 'trankit'
+        'Voikko', 'UDPipe', 'stanza', 'Turku parser', 'FinnPos', 'spacy-fi',
+        'trankit', 'simplemma'
     ]
 
     sns.barplot(x='model', y='Lemmatization error rate', data=results, order=model_order)
@@ -112,7 +113,7 @@ def main():
         plt.annotate(text, (x, y), xytext=(textrelx, 0), textcoords='offset points',
                      horizontalalignment=ha, verticalalignment='center')
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
-    plt.xlim([0, 0.15])
+    #plt.xlim([0, 0.15])
     plt.yscale('log')
     plt.savefig(os.path.join(imagedir, 'lemma_speed.png'))
     plt.close()
