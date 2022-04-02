@@ -3,6 +3,7 @@ import subprocess
 import spacy
 import spacy_udpipe
 import stanza
+import trankit
 from voikko import libvoikko
 
 inflection_postfix_re = re.compile(r'(.{2,}):\w{1,4}$')
@@ -277,6 +278,34 @@ class SpacyFiExperimental:
 
     def parse(self, texts):
         return process_spacy(self.nlp, texts)
+
+
+class Trankit:
+    def __init__(self):
+        self.name = 'trankit'
+        self.nlp = None
+
+    def initialize(self):
+        self.nlp = trankit.Pipeline('finnish', cache_dir='data/trankit_resources')
+
+    def parse(self, texts):
+        res = []
+        for text in texts:
+            doc = self.nlp(text, is_sent=True)
+            lemmas = []
+            pos = []
+            for token in doc['tokens']:
+                if 'expanded' in token:
+                    for exp_token in token['expanded']:
+                        lemmas.append(exp_token['lemma'])
+                        pos.append(exp_token['upos'])
+                else:
+                    lemmas.append(token['lemma'])
+                    pos.append(token['upos'])
+
+            res.append({'lemmas': lemmas, 'pos': pos})
+
+        return res
 
 
 def process_spacy(nlp, texts):

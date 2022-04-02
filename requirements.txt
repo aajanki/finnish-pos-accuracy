@@ -10,6 +10,7 @@ spacy_fi_experimental_web_md==0.9.0
 voikko==0.5
 typer==0.4.1
 stanza==1.3.0
+trankit==1.1.1
 
 # Turku neural parser pipeline
 torch==1.11.0

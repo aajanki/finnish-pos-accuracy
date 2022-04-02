@@ -29,6 +29,7 @@ def main(
         FinnPos(),
         SpacyFiExperimental(),
         Stanza(),
+        Trankit(),
     ]
 
     if models:
