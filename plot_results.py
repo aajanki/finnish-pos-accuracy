@@ -32,7 +32,7 @@ def main():
 
     model_order = [
         'Voikko', 'UDPipe', 'stanza', 'Turku parser', 'FinnPos', 'spacy-fi',
-        'trankit', 'simplemma'
+        'trankit', 'simplemma', 'uralicnlp'
     ]
 
     sns.barplot(x='model', y='Lemmatization error rate', data=results, order=model_order)

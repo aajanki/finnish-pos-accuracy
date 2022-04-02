@@ -31,6 +31,7 @@ def main(
         Stanza(),
         Trankit(),
         Simplemma(),
+        UralicNLP(),
     ]
 
     if models:

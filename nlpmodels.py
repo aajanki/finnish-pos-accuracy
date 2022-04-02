@@ -6,6 +6,7 @@ import stanza
 import trankit
 import simplemma
 from voikko import libvoikko
+from uralicNLP import uralicApi
 
 inflection_postfix_re = re.compile(r'(.{2,}):\w{1,4}$')
 
@@ -327,6 +328,32 @@ class Simplemma:
             pos = []
             res.append({'lemmas': lemmas, 'pos': pos})
         return res
+
+
+class UralicNLP:
+    def __init__(self):
+        self.name = 'uralicnlp'
+        self.voikko = None
+
+    def initialize(self):
+        self.voikko = libvoikko.Voikko('fi')
+
+    def parse(self, texts):
+        res = []
+        for text in texts:
+            lemmas = []
+            for token in self.tokenize(text):
+                tlemmas = uralicApi.lemmatize(token, 'fin')
+                tlemma = tlemmas[0] if tlemmas else token
+                lemmas.append(tlemma)
+            res.append({'lemmas': lemmas, 'pos': []})
+        return res
+
+    def tokenize(self, text):
+        return [
+            t.tokenText for t in self.voikko.tokens(text)
+            if t.tokenTypeName != 'WHITESPACE'
+        ]
 
 
 def process_spacy(nlp, texts):

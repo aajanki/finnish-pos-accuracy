@@ -2,6 +2,7 @@ import os
 import spacy_udpipe
 import stanza
 import trankit
+from uralicNLP import uralicApi
 
 print('Downloading UDPipe model...')
 spacy_udpipe.download('fi-tdt')
@@ -15,3 +16,6 @@ print('Downloading Trankit model...')
 # Initializing the trankit Pipeline will download the models if they are not
 # already downloaded
 trankit.Pipeline('finnish', cache_dir='data/trankit_resources')
+
+print('Downloading UralicNLP model...')
+uralicApi.download("fin")
