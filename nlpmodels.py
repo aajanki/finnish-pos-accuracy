@@ -162,7 +162,7 @@ class TurkuNeuralParser:
             '--conf', 'models_fi_tdt_dia/pipelines.yaml',
             'parse_plaintext'
         ]
-        p = subprocess.run(command, cwd='data/Turku-neural-parser-pipeline',
+        p = subprocess.run(command, cwd='models/Turku-neural-parser-pipeline',
                            input='\n\n'.join(texts), capture_output=True, text=True)
         if p.returncode != 0:
             print(f'Turku pipeline failed with return code {p.returncode}')

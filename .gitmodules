@@ -4,3 +4,6 @@
 [submodule "models/FinnPos"]
 	path = models/FinnPos
 	url = https://github.com/mpsilfve/FinnPos
+[submodule "models/Turku-neural-parser-pipeline"]
+	path = models/Turku-neural-parser-pipeline
+	url = https://github.com/TurkuNLP/Turku-neural-parser-pipeline.git
