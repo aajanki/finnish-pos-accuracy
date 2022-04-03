@@ -158,12 +158,12 @@ class TurkuNeuralParser:
 
     def _process_sentences(self, texts):
         command = [
-            'python', 'tnpp_parse.py',
-            '--conf', 'models_fi_tdt_dia/pipelines.yaml',
+            'python', 'models/Turku-neural-parser-pipeline/tnpp_parse.py',
+            '--conf', 'models/models_fi_tdt_dia/pipelines.yaml',
             'parse_plaintext'
         ]
-        p = subprocess.run(command, cwd='models/Turku-neural-parser-pipeline',
-                           input='\n\n'.join(texts), capture_output=True, text=True)
+        p = subprocess.run(command, input='\n\n'.join(texts),
+                           capture_output=True, text=True)
         if p.returncode != 0:
             print(f'Turku pipeline failed with return code {p.returncode}')
             print(p.stderr)
