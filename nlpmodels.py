@@ -253,7 +253,7 @@ class Stanza:
 
     def initialize(self):
         self.nlp = stanza.Pipeline(lang='fi',
-                                   dir='data/stanza_resources',
+                                   dir='models/stanza_resources',
                                    processors='tokenize,mwt,pos,lemma')
 
     def parse(self, texts):
@@ -288,7 +288,7 @@ class Trankit:
         self.nlp = None
 
     def initialize(self):
-        self.nlp = trankit.Pipeline('finnish', cache_dir='data/trankit_resources')
+        self.nlp = trankit.Pipeline('finnish', cache_dir='models/trankit_resources')
 
     def parse(self, texts):
         res = []
