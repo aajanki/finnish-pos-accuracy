@@ -40,7 +40,7 @@ def main(
         selected_names = set(m.name for m in selected_models)
 
         if set(models_list) - selected_names:
-            raise ValueError(f'Unknown model(s): {set(models_list) - selected_names}')
+            raise ValueError(f'Unknown model(s): {", ".join(set(models_list) - selected_names)}')
 
     selected_testsets = [
         { 'name': 'UD_Finnish_TDT', 'load': load_testset_ud_tdt },
@@ -56,7 +56,7 @@ def main(
         selected_names = set(t['name'] for t in selected_testsets)
 
         if set(testsets_list) - selected_names:
-            raise ValueError(f'Unknown testset(s): {set(testsets_list) - selected_names}')
+            raise ValueError(f'Unknown testset(s): {", ".join(set(testsets_list) - selected_names)}')
 
     for model in selected_models:
         print(f'Initializing {model.name}')
@@ -197,11 +197,11 @@ def calculate_metrics(df, key_prefix):
         if x['predicted_length'] > 0:
             precision = x['matches']/x['predicted_length']
         else:
-            precision = 0
+            precision = np.nan
         if recall + precision > 0:
             f1 = 2*recall*precision/(recall + precision)
         else:
-            f1 = 0
+            f1 = np.nan
         aligned_accuracy = x['matches']/x['aligned_length']
 
     return {

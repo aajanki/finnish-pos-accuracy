@@ -34,6 +34,7 @@ def main():
         'Voikko', 'UDPipe', 'stanza', 'Turku parser', 'FinnPos', 'spacy-fi',
         'trankit', 'simplemma', 'uralicnlp'
     ]
+    model_order = [x for x in model_order if x in results['model'].unique()]
 
     sns.barplot(x='model', y='Lemmatization error rate', data=results, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
@@ -113,7 +114,7 @@ def main():
         plt.annotate(text, (x, y), xytext=(textrelx, 0), textcoords='offset points',
                      horizontalalignment=ha, verticalalignment='center')
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
-    #plt.xlim([0, 0.15])
+    plt.xlim([0, 0.28])
     plt.yscale('log')
     plt.savefig(os.path.join(imagedir, 'lemma_speed.png'))
     plt.close()
@@ -128,7 +129,7 @@ def main():
         plt.annotate(text, (x, y), xytext=(textrelx, 0), textcoords='offset points',
                      horizontalalignment=ha, verticalalignment='center')
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
-    plt.xlim([0, 0.27])
+    plt.xlim([0, 0.25])
     plt.yscale('log')
     plt.savefig(os.path.join(imagedir, 'pos_speed.png'))
     plt.close()
