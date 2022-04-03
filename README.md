@@ -5,12 +5,15 @@ source Finnish part-of-speech taggers and lemmatization algorihtms.
 
 ### Tested algorithms
 
-* [Turku neural parser pipeline](https://turkunlp.org/Turku-neural-parser-pipeline/)
-* [FinnPos](https://github.com/mpsilfve/FinnPos/wiki)
-* [UDPipe](http://ufal.mff.cuni.cz/udpipe) (through spacy-udpipe)
-* [Stanza](https://stanfordnlp.github.io/stanza/)
-* [Voikko](https://voikko.puimula.org/)
 * [Experimental Finnish model for spaCy](https://github.com/aajanki/spacy-fi)
+* [FinnPos](https://github.com/mpsilfve/FinnPos/wiki)
+* [Simplemma](https://github.com/adbar/simplemma/)
+* [Stanza](https://stanfordnlp.github.io/stanza/)
+* [Trankit](https://trankit.readthedocs.io/en/latest/)
+* [Turku neural parser pipeline](https://turkunlp.org/Turku-neural-parser-pipeline/)
+* [UDPipe](http://ufal.mff.cuni.cz/udpipe) (through spacy-udpipe)
+* [UralicNLP](https://github.com/mikahama/uralicNLP)
+* [Voikko](https://voikko.puimula.org/)
 
 ### Test datasets
 
@@ -21,13 +24,16 @@ source Finnish part-of-speech taggers and lemmatization algorihtms.
 ## Setup
 
 Install dependencies:
-* clang
-* Docker
+* Python 3.9
 * libvoikko with Finnish morphology data files
+* C++ compiler and libboost for compiling [cg3](https://github.com/GrammarSoft/cg3) needed by UralicNLP
 
-Create a Python virtual environment and download test data and models by running the following commands:
+Setup git submodules, create a Python virtual environment and download test data and models by running the following commands:
 ```
-python3 -m venv venv
+git submodule init
+git submodule update
+
+python3.9 -m venv venv
 source venv/bin/activate
 pip install wheel
 pip install -r requirements.txt
@@ -39,14 +45,8 @@ python preprocess_data.py
 
 ## Run
 
-The Turku neural parser pipeline is run as a docker image. If your
-Docker installation requires root priviledges (default on many Linux
-distros) define the DOCKER_NEEDS_SUDO environment variable and enter
-the sudo password when the evaluation script asks it for running
-docker commands.
-
 ```
-export DOCKER_NEEDS_SUDO=1
+export PATH=$(pwd)/models/cg3/src:$PATH
 python evaluate.py
 
 python plot_results.py

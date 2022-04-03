@@ -1,0 +1,3 @@
+[submodule "models/cg3"]
+	path = models/cg3
+	url = https://github.com/GrammarSoft/cg3.git

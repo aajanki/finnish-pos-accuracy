@@ -6,7 +6,7 @@ import stanza
 import trankit
 import simplemma
 from voikko import libvoikko
-from uralicNLP import uralicApi
+from uralicNLP.cg3 import Cg3
 
 inflection_postfix_re = re.compile(r'(.{2,}):\w{1,4}$')
 
@@ -333,20 +333,23 @@ class Simplemma:
 class UralicNLP:
     def __init__(self):
         self.name = 'uralicnlp'
+        self.cg = None
         self.voikko = None
 
     def initialize(self):
+        self.cg = Cg3('fin')
         self.voikko = libvoikko.Voikko('fi')
 
     def parse(self, texts):
         res = []
         for text in texts:
             lemmas = []
-            for token in self.tokenize(text):
-                tlemmas = uralicApi.lemmatize(token, 'fin')
-                tlemma = tlemmas[0] if tlemmas else token
-                lemmas.append(tlemma)
-            res.append({'lemmas': lemmas, 'pos': []})
+            pos = []
+            tokens = self.tokenize(text)
+            for _, analyses in self.cg.disambiguate(tokens):
+                lemmas.append(analyses[0].lemma)
+                pos.append(self._uralic_pos_to_upos(analyses[0].morphology))
+            res.append({'lemmas': lemmas, 'pos': pos})
         return res
 
     def tokenize(self, text):
@@ -354,6 +357,45 @@ class UralicNLP:
             t.tokenText for t in self.voikko.tokens(text)
             if t.tokenTypeName != 'WHITESPACE'
         ]
+
+    def _uralic_pos_to_upos(self, morphology):
+        if 'A' in morphology:
+            return 'ADJ'
+        elif 'ABBR' in morphology or 'ACR' in morphology:
+            if 'Prop' in morphology:
+                return 'PROPN'
+            else:
+                return 'ADV'
+        elif 'Adv' in morphology:
+            return 'ADV'
+        elif 'CC' in morphology:
+            return 'CCONJ'
+        elif 'CS' in morphology:
+            return 'SCONJ'
+        elif 'Interj' in morphology:
+            return 'INTJ'
+        elif 'N' in morphology:
+            if 'Prop' in morphology:
+                return 'PROPN'
+            else:
+                return 'NOUN'
+        elif 'Num' in morphology:
+            return 'NUM'
+        elif 'Pcle' in morphology:
+            return 'ADV'
+        elif 'Po' in morphology or 'Pr' in morphology:
+            return 'ADP'
+        elif 'Pron' in morphology:
+            return 'PRON'
+        elif 'Punct' in morphology:
+            return 'PUNCT'
+        elif 'V' in morphology:
+            if '@+FAUXV' in morphology:
+                return 'AUX'
+            else:
+                return 'VERB'
+        else:
+            return 'X'
 
 
 def process_spacy(nlp, texts):
