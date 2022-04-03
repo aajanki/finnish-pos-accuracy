@@ -1,3 +1,6 @@
 [submodule "models/cg3"]
 	path = models/cg3
 	url = https://github.com/GrammarSoft/cg3.git
+[submodule "models/FinnPos"]
+	path = models/FinnPos
+	url = https://github.com/mpsilfve/FinnPos

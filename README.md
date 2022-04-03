@@ -26,7 +26,8 @@ source Finnish part-of-speech taggers and lemmatization algorihtms.
 Install dependencies:
 * Python 3.9
 * libvoikko with Finnish morphology data files
-* C++ compiler and libboost for compiling [cg3](https://github.com/GrammarSoft/cg3) needed by UralicNLP
+* clang (or other C++ compiler)
+* Dependencies needed to compile [FinnPos](https://github.com/mpsilfve/FinnPos) and [cg3](https://github.com/GrammarSoft/cg3)
 
 Setup git submodules, create a Python virtual environment and download test data and models by running the following commands:
 ```

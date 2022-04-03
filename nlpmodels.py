@@ -182,7 +182,7 @@ class FinnPos:
 
     def parse(self, texts):
         token_lines = '\n\n'.join('\n'.join(self.tokenize(text)) for text in texts)
-        p = subprocess.run(['data/FinnPos/bin/ftb-label'], input=token_lines,
+        p = subprocess.run(['models/FinnPos/bin/ftb-label'], input=token_lines,
                            stdout=subprocess.PIPE, encoding='utf-8', check=True)
         sentences = p.stdout.split('\n\n')
         if len(sentences) == len(texts) + 1:
