@@ -16,7 +16,7 @@ def main(
         models: Optional[str] = typer.Option(None, help='comma-separated list of models to evaluate'),
         testsets: Optional[str] = typer.Option(None, help='comma-separate list of testsets to evaluate'),
 ):
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
     outputdir = 'results'
     errorcasedir = 'results/errorcases'

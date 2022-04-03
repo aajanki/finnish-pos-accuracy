@@ -1,10 +1,14 @@
 import re
 import subprocess
+import sys
+import time
+import requests
 import spacy
 import spacy_udpipe
 import stanza
 import trankit
 import simplemma
+from itertools import zip_longest
 from voikko import libvoikko
 from uralicNLP.cg3 import Cg3
 
@@ -118,29 +122,70 @@ class Voikko:
 class TurkuNeuralParser:
     def __init__(self):
         self.name = 'Turku-neural-parser'
+        self.server_process = None
+
+    def __del__(self):
+        self.stop()
 
     def initialize(self):
-        self._process_sentences(['ABC, kissa kävelee'])
+        if self.server_process is None:
+            print('Starting Turku-neural-parser server...')
+            env = {
+                'TNPP_MODEL': 'models/models_fi_tdt_dia/pipelines.yaml',
+                'TNPP_PIPELINE': 'parse_plaintext',
+                'TNPP_PORT': '7689',
+                'TNPP_MAX_CHARS': '15000',
+                'FLASK_APP': 'models/Turku-neural-parser-pipeline/tnpp_serve.py',
+            }
+            args = [
+                'venv/bin/flask', 'run', '--host', '0.0.0.0', '--port', '7689'
+            ]
+            self.server_process = subprocess.Popen(
+                args, stdout=sys.stdout, stderr=sys.stderr, env=env
+            )
+
+            server_ready = False
+            attempt = 0
+            max_retries = 10
+            while not server_ready:
+                time.sleep(5)
+
+                try:
+                    self._process_sentences(['ABC, kissa kävelee'])
+                    server_ready = True
+                except requests.exceptions.ConnectionError:
+                    attempt += 1
+                    if attempt >= max_retries:
+                        self.stop()
+                        raise RuntimeError('Turku-neural-parser server failed to start')
+
+    def stop(self):
+        if self.server_process is not None:
+            print('Shutting down Turku-neural-parser server...')
+            self.server_process.terminate()
+            self.server_process.wait()
+            self.server_process = None
 
     def parse(self, texts):
-        sentences = self._process_sentences(texts)
-
         res = []
-        for sentence in sentences:
-            lemmas = []
-            pos = []
-            for line in sentence.split('\n'):
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue
+        for batch in chunks(texts, 50):
+            batch = [x for x in batch if x is not None]
+            sentences = self._process_sentences(batch)
+            for sentence in sentences:
+                lemmas = []
+                pos = []
+                for line in sentence.split('\n'):
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
 
-                fields = line.split('\t')
-                assert len(fields) == 10
+                    fields = line.split('\t')
+                    assert len(fields) == 10
 
-                lemmas.append(fields[2])
-                pos.append(fields[3])
+                    lemmas.append(fields[2])
+                    pos.append(fields[3])
 
-            res.append({'lemmas': lemmas, 'pos': pos})
+                res.append({'lemmas': lemmas, 'pos': pos})
 
         return res
 
@@ -157,19 +202,12 @@ class TurkuNeuralParser:
         return sentences
 
     def _process_sentences(self, texts):
-        command = [
-            'python', 'models/Turku-neural-parser-pipeline/tnpp_parse.py',
-            '--conf', 'models/models_fi_tdt_dia/pipelines.yaml',
-            'parse_plaintext'
-        ]
-        p = subprocess.run(command, input='\n\n'.join(texts),
-                           capture_output=True, text=True)
-        if p.returncode != 0:
-            print(f'Turku pipeline failed with return code {p.returncode}')
-            print(p.stderr)
-            raise RuntimeError('Turku pipeline failed')
+        r = requests.post('http://localhost:7689',
+                          data='\n\n'.join(texts).encode('utf-8'),
+                          headers={'Content-Type': 'text/plain; charset=utf-8'})
+        r.raise_for_status()
 
-        return self.split_sentences(p.stdout)
+        return self.split_sentences(r.text)
 
 
 class FinnPos:
@@ -404,3 +442,9 @@ def process_spacy(nlp, texts):
         'lemmas': [t.lemma_ for t in doc],
         'pos': [t.pos_ for t in doc]
     } for doc in docs]
+
+
+def chunks(iterable, n):
+    """Collect data into non-overlapping fixed-length chunks"""
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=None)
