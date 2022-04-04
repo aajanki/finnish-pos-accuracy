@@ -1,3 +1,11 @@
+"""Cleanup input conllu files.
+
+This script normalizes source POS tags to UPOS, removes multi-words tokens,
+imputes missing dependencies, handles lines with too few or too many columns
+and fixes various other issues (the FTB datasets are quite broken).
+"""
+
+
 import logging
 import os
 import os.path
@@ -60,21 +68,20 @@ def preprocess(filename, inputdir, destdir, tag_map, aux_from_deprel):
 
     num_sentences = 0
     num_tokens = 0
-    num_bad_sentences = 0
-    num_bad_tokens = 0
+    num_too_few_columns = 0
+    num_too_many_columns = 0
     num_multiword_tokens = 0
-    num_empty_tokens = 0
     num_non_verb_aux = 0
+    num_missing_head = 0
+    num_non_continuous_index = 0
 
     with open(in_path, 'r', encoding='utf-8') as inf, \
          open(out_path, 'w', encoding='utf-8') as outf:
 
         for sentence in split_into_sentences(inf):
             num_sentences += 1
-            if sentence_has_invalid_tags(sentence):
-                num_bad_sentences += 1
-                continue
 
+            prev_index = 0
             for token_line in sentence:
                 num_tokens += 1
                 if token_line == '' or token_line.startswith('#'):
@@ -84,18 +91,31 @@ def preprocess(filename, inputdir, destdir, tag_map, aux_from_deprel):
 
                 cols = token_line.strip('\n').split('\t')
                 if len(cols) < 10:
-                    num_bad_tokens += 1
-                    continue
+                    num_too_few_columns += 1
+                    # This happens a few times in FTB1/2. Most of these should
+                    # be commas. We'll set all of them to commas with heads
+                    # pointing to previous tokens.
+                    #
+                    # In few cases, the token should be something else, but
+                    # we set them to commas anyway.
+                    cols = [
+                        cols[0], ',', ',', 'PUNCT', 'punct', '_',
+                        str(int(cols[0]) - 1), 'punct', '_', '_'
+                    ]
+                if len(cols) > 10:
+                    num_too_many_columns += 1
+                    cols = cols[:10]
 
                 # Skip multiword tokens and empty nodes
                 if '-' in cols[0] or '.' in cols[0]:
                     num_multiword_tokens += 1
                     continue
-                if '.' in cols[0]:
-                    num_empty_tokens += 1
-                    continue
 
-                cols[3] = tag_map.get(cols[3], cols[3])
+                if int(cols[0]) != prev_index + 1:
+                    num_non_continuous_index += 1
+                    cols[0] = str(prev_index + 1)
+
+                cols[3] = normalize_pos(cols[3], tag_map)
 
                 if aux_from_deprel and cols[7] in ['aux', 'aux:pass', 'cop']:
                     if cols[3] in ['VERB', 'AUX']:
@@ -103,43 +123,63 @@ def preprocess(filename, inputdir, destdir, tag_map, aux_from_deprel):
                     else:
                         num_non_verb_aux += 1
 
+                if cols[6] == '_':
+                    # FTB2 doesn't set heads for punctuations. The evaluation
+                    # script needs these, so we set head to the previous token.
+                    # This is probably wrong, but since we're not using them,
+                    # that's OK.
+                    assert cols[3] == 'PUNCT'
+                    cols[6] = '2' if cols[0] == '1' else str(int(cols[0]) - 1)
+                    cols[7] = 'punct'
+                    num_missing_head += 1
+
+                prev_index = int(cols[0])
+
                 outf.write('\t'.join(cols))
                 outf.write('\n')
             outf.write('\n')
 
     logging.info(f'Processed {num_sentences} sentences with {num_tokens} tokens')
-    if num_bad_sentences > 0:
-        logging.warning(f'Skipped {num_bad_sentences} sentences with invalid POS tags')
-    if num_bad_tokens > 0:
-        logging.warning(f'Skipped {num_bad_tokens} tokens that had too few columns')
+    if num_too_few_columns > 0:
+        logging.warning(f'Replaced {num_too_few_columns} tokens with too few columns with commas.')
+    if num_too_many_columns > 0:
+        logging.warning(f'Encountered {num_too_many_columns} tokens with too many columns. Extra columns were ignored')
     if num_non_verb_aux > 0:
         logging.warning(f'Leaving {num_non_verb_aux} non-verb AUX tags unchanged')
     if num_multiword_tokens > 0:
         logging.info(f'Skipped {num_multiword_tokens} multiword tokens')
-    if num_empty_tokens > 0:
-        logging.info(f'Skipped {num_empty_tokens} empty tokens')
+    if num_missing_head > 0:
+        logging.warning(f'Fixed {num_missing_head} missing heads')
+    if num_non_continuous_index > 0:
+        logging.warning(f'Detected {num_non_continuous_index} tokens with non-continuous indices')
 
 
 def split_into_sentences(lines):
+    index = None
     sentence = []
     for line in lines:
         line = line.strip('\n')
-        if line == '':
+        if line and not line.startswith('#'):
+            index, _ = line.split('\t', 1)
+
+        if index == '1':
             if sentence:
                 yield sentence
-
             sentence = []
-        else:
+
+        if line and not line.startswith('#'):
             sentence.append(line)
 
     if sentence:
         yield sentence
 
 
-def sentence_has_invalid_tags(sentence):
-    token_columns = (line.split('\t') for line in sentence)
-    pos_tags = (line[3] if len(line) > 3 else '' for line in token_columns)
-    return any('|' in tag for tag in pos_tags)
+def normalize_pos(pos, tag_map):
+    if '|' in pos:
+        # FTB2 has some erroneous tags like "N|Sg|Ine"
+        pos = pos.split('|', 1)[0]
+
+    return tag_map.get(pos, pos)
 
 
 if __name__ == '__main__':
