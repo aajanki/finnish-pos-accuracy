@@ -308,9 +308,9 @@ class Stanza:
         return res
 
 
-class SpacyFiExperimental:
+class SpacyExperimentalFi:
     def __init__(self):
-        self.name = 'spacy-fi'
+        self.name = 'spacy-fi_experimental_web_md'
         self.nlp = None
 
     def initialize(self):
@@ -318,6 +318,19 @@ class SpacyFiExperimental:
 
     def parse(self, texts):
         return process_spacy(self.nlp, texts)
+
+
+class SpacyCoreFi:
+    def __init__(self, model_name):
+        self.name = f'spacy-{model_name}'
+        self.model_name = model_name
+        self.nlp = None
+
+    def initialize(self):
+        self.nlp = spacy.load(self.model_name)
+
+    def parse(self, texts):
+        return process_spacy(self.nlp, texts, ['ner', 'parser'])
 
 
 class Trankit:
@@ -436,8 +449,9 @@ class UralicNLP:
             return 'X'
 
 
-def process_spacy(nlp, texts):
-    docs = list(nlp.pipe(texts, disable=['ner', 'parser', 'morphologizer']))
+def process_spacy(nlp, texts, disable=None):
+    disable = disable or ['ner', 'parser', 'morphologizer']
+    docs = list(nlp.pipe(texts, disable=disable))
     return [{
         'lemmas': [t.lemma_ for t in doc],
         'pos': [t.pos_ for t in doc]
