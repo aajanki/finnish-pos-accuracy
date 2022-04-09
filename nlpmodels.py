@@ -317,7 +317,7 @@ class SpacyExperimentalFi:
         self.nlp = spacy.load('spacy_fi_experimental_web_md')
 
     def parse(self, texts):
-        return process_spacy(self.nlp, texts)
+        return process_spacy(self.nlp, texts, ['ner', 'parser'])
 
 
 class SpacyCoreFi:

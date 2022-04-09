@@ -6,6 +6,7 @@ matplotlib==3.5.1
 seaborn==0.11.2
 spacy-udpipe==1.0.0
 spacy==3.3.0.dev0
+https://github.com/aajanki/spacy-fi/releases/download/v0.10.0b1/spacy_fi_experimental_web_md-0.10.0b1-py3-none-any.whl
 https://github.com/explosion/spacy-models/releases/download/fi_core_news_sm-3.3.0a0/fi_core_news_sm-3.3.0a0-py3-none-any.whl
 https://github.com/explosion/spacy-models/releases/download/fi_core_news_md-3.3.0a0/fi_core_news_md-3.3.0a0-py3-none-any.whl
 https://github.com/explosion/spacy-models/releases/download/fi_core_news_lg-3.3.0a0/fi_core_news_lg-3.3.0a0-py3-none-any.whl
