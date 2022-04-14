@@ -64,13 +64,15 @@ class Voikko:
     def parse(self, texts):
         res = []
         for text in texts:
+            words = []
             lemmas = []
             pos = []
             for t in self.tokenize(text):
+                words.append(t)
                 analyzed = self.voikko.analyze(t)
                 lemmas.append(self.analyzed_to_lemma(analyzed, t))
                 pos.append(self.analyzed_to_pos_tag(analyzed, t))
-            res.append({'lemmas': lemmas, 'pos': pos})
+            res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
         return res
 
     def tokenize(self, text):
@@ -172,6 +174,7 @@ class TurkuNeuralParser:
             batch = [x for x in batch if x is not None]
             sentences = self._process_sentences(batch)
             for sentence in sentences:
+                words = []
                 lemmas = []
                 pos = []
                 for line in sentence.split('\n'):
@@ -182,10 +185,11 @@ class TurkuNeuralParser:
                     fields = line.split('\t')
                     assert len(fields) == 10
 
+                    words.append(fields[1])
                     lemmas.append(fields[2])
                     pos.append(fields[3])
 
-                res.append({'lemmas': lemmas, 'pos': pos})
+                res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
 
         return res
 
@@ -229,6 +233,7 @@ class FinnPos:
 
         res = []
         for sentence in sentences:
+            words = []
             lemmas = []
             pos = []
             for token in sentence.split('\n'):
@@ -240,10 +245,11 @@ class FinnPos:
                 assert len(columns) == 5, 'Unexpected number of columns ' \
                     f'in the ftb-label output. Expected 5, got {len(columns)}'
 
+                words.append(columns[0])
                 lemmas.append(columns[2])
                 pos.append(self._finnpos_to_upos(columns[3]))
 
-            res.append({'lemmas': lemmas, 'pos': pos})
+            res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
 
         return res
 
@@ -298,13 +304,15 @@ class Stanza:
         in_docs = [stanza.Document([], text=t) for t in texts]
         res = []
         for doc in self.nlp(in_docs):
+            words = []
             lemmas = []
             pos = []
             for sent in doc.sentences:
                 for w in sent.words:
+                    words.append(w.text)
                     lemmas.append(w.lemma)
                     pos.append(w.pos)
-            res.append({'lemmas': lemmas, 'pos': pos})
+            res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
         return res
 
 
@@ -332,18 +340,21 @@ class Trankit:
         res = []
         for text in texts:
             doc = self.nlp(text, is_sent=True)
+            words = []
             lemmas = []
             pos = []
             for token in doc['tokens']:
                 if 'expanded' in token:
                     for exp_token in token['expanded']:
+                        words.append(exp_token['text'])
                         lemmas.append(exp_token['lemma'])
                         pos.append(exp_token['upos'])
                 else:
+                    words.append(token['text'])
                     lemmas.append(token['lemma'])
                     pos.append(token['upos'])
 
-            res.append({'lemmas': lemmas, 'pos': pos})
+            res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
 
         return res
 
@@ -359,12 +370,13 @@ class Simplemma:
     def parse(self, texts):
         res = []
         for text in texts:
-            lemmas = [
-                simplemma.lemmatize(t, self.langdata)
-                for t in simplemma.simple_tokenizer(text)
-            ]
+            words = []
+            lemmas = []
             pos = []
-            res.append({'lemmas': lemmas, 'pos': pos})
+            for t in simplemma.simple_tokenizer(text):
+                words.append(t)
+                lemmas.append(simplemma.lemmatize(t, self.langdata))
+            res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
         return res
 
 
@@ -381,13 +393,15 @@ class UralicNLP:
     def parse(self, texts):
         res = []
         for text in texts:
+            words = []
             lemmas = []
             pos = []
             tokens = self.tokenize(text)
-            for _, analyses in self.cg.disambiguate(tokens):
+            for word, analyses in self.cg.disambiguate(tokens):
+                words.append(word)
                 lemmas.append(analyses[0].lemma)
                 pos.append(self._uralic_pos_to_upos(analyses[0].morphology))
-            res.append({'lemmas': lemmas, 'pos': pos})
+            res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
         return res
 
     def tokenize(self, text):
@@ -439,6 +453,7 @@ class UralicNLP:
 def process_spacy(nlp, texts):
     docs = list(nlp.pipe(texts, disable=['ner', 'parser', 'morphologizer']))
     return [{
+        'texts': [t.text for t in doc],
         'lemmas': [t.lemma_ for t in doc],
         'pos': [t.pos_ for t in doc]
     } for doc in docs]

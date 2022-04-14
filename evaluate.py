@@ -1,14 +1,16 @@
 import logging
+import re
 import time
-import os
-import os.path
 import numpy as np
 import pandas as pd
 import typer
 from alignment.sequence import Sequence
 from alignment.vocabulary import Vocabulary
 from alignment.sequencealigner import SimpleScoring, StrictGlobalSequenceAligner
+from datasets import parse_conllu
 from nlpmodels import *
+from itertools import zip_longest
+from pathlib import Path
 from typing import Optional
 
 
@@ -18,12 +20,12 @@ def main(
 ):
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    outputdir = 'results'
-    errorcasedir = 'results/errorcases'
+    outputdir = Path('results')
+    errorcasedir = outputdir / 'errorcases'
+    predictionsdir = outputdir / 'predictions'
 
     selected_models = [
         UDPipe('fi-tdt'),
-        #UDPipe('fi'),
         Voikko(),
         TurkuNeuralParser(),
         FinnPos(),
@@ -62,8 +64,9 @@ def main(
         print(f'Initializing {model.name}')
         model.initialize()
 
-    os.makedirs(outputdir, exist_ok=True)
-    os.makedirs(errorcasedir, exist_ok=True)
+    outputdir.mkdir(exist_ok=True, parents=True)
+    errorcasedir.mkdir(exist_ok=True, parents=True)
+    predictionsdir.mkdir(exist_ok=True, parents=True)
     for testset in selected_testsets:
         sentences = testset['load']()
 
@@ -78,7 +81,7 @@ def main(
             print(f'Evaluating {model.name} on {testset["name"]}')
 
             metrics, lemma_errors, pos_errors = \
-                evaluate_model(model, sentences)
+                evaluate_model(model, sentences, predictionsdir, testset['name'])
 
             print(f'Lemma WER: {metrics["Lemmatization WER"]:.3f}')
             print(f'UPOS WER: {metrics["UPOS WER"]:.3f}')
@@ -87,35 +90,38 @@ def main(
 
             evaluation_results.append(metrics)
 
-            le_filename = os.path.join(
-                errorcasedir, f'lemma_erros_{model.name}_{testset["name"]}.txt')
-            pe_filename = os.path.join(
-                errorcasedir, f'pos_erros_{model.name}_{testset["name"]}.txt')
+            le_filename = errorcasedir / f'lemma_erros_{model.name}_{testset["name"]}.txt'
+            pe_filename = errorcasedir / f'pos_erros_{model.name}_{testset["name"]}.txt'
             with open(le_filename, 'w') as lemma_errors_file, \
                  open(pe_filename, 'w') as pos_errors_file:
                 write_errors(lemma_errors_file, lemma_errors)
                 write_errors(pos_errors_file, pos_errors)
 
         df = pd.DataFrame(evaluation_results, index=[m.name for m in selected_models])
-        df.to_csv(os.path.join(outputdir, f'evaluation_{testset["name"]}.csv'))
+        df.to_csv(outputdir / f'evaluation_{testset["name"]}.csv')
 
 
-def evaluate_model(model, sentences):
+def evaluate_model(model, sentences, outputdir, testset_name):
     t0 = time.time()
 
-    texts = [x['text'] for x in sentences]
+    texts = [s.text() for s in sentences]
     predicted = model.parse(texts)
     assert len(predicted) == len(sentences)
 
     duration = time.time() - t0
     sentences_per_s = len(sentences)/duration
 
+    (outputdir / model.name).mkdir(exist_ok=True, parents=True)
+    prediction_file = outputdir / model.name / f'{testset_name}.conllu'
+    with open(prediction_file, 'w') as conllu_file:
+        write_results_conllu(conllu_file, predicted)
+
     lemma_matches = []
     lemma_errors = []
     pos_matches = []
     pos_errors = []
     for sent, pred in zip(sentences, predicted):
-        expected_lemmas = sent['lemmas']
+        expected_lemmas = sent.lemmas()
         observed_lemmas = pred['lemmas']
         matches = count_sequence_matches(
             normalize_lemmas(expected_lemmas),
@@ -123,15 +129,15 @@ def evaluate_model(model, sentences):
         lemma_matches.append(matches)
 
         if matches['matches'] != matches['gold_length']:
-            lemma_errors.append((sent['text'], observed_lemmas, expected_lemmas))
+            lemma_errors.append((sent.text(), observed_lemmas, expected_lemmas))
 
-        expected_pos = sent['pos']
+        expected_pos = sent.pos()
         observed_pos = pred['pos']
         matches = count_sequence_matches(expected_pos, observed_pos)
         pos_matches.append(matches)
 
         if matches['matches'] != matches['gold_length']:
-            pos_errors.append((sent['text'], observed_pos, expected_pos))
+            pos_errors.append((sent.text(), observed_pos, expected_pos))
 
     df_lemma = pd.DataFrame(lemma_matches)
     df_pos = pd.DataFrame(pos_matches)
@@ -214,8 +220,19 @@ def calculate_metrics(df, key_prefix):
 
 
 def normalize_lemmas(lemmas):
-    norm = (w.lower().replace('#', '').replace('-', '') for w in lemmas)
-    return [normalize_quotes(w) for w in norm]
+    return [normalize_lemma(lemma) for lemma in lemmas]
+
+
+def normalize_lemma(lemma):
+    if re.match(r'[-#]+$', lemma):
+        return lemma
+
+    lemma = lemma.lower().replace('#', '').replace('-', '')
+    return normalize_quotes(lemma)
+
+
+def remove_compund_word_boundary_markers(word):
+    return re.sub(r'(?<=\w)#(?=\w)', '', word)
 
 
 def normalize_quotes(word):
@@ -247,55 +264,8 @@ def load_testset_ftb2_sofie():
     return parse_conllu(open('data/preprocessed/ftb2/FinnTreeBank_2/sofie12_tab.txt'))
 
 
-def parse_conllu(f):
-    sentences = []
-    tokens = []
-    lemmas = []
-    pos = []
-    for linenum, line in enumerate(f.readlines()):
-        line = line.strip()
-        if line.startswith('#') or line == '':
-            continue
-
-        fields = line.split('\t')
-        if len(fields) != 10:
-            logging.warning(f'Ignoring invalid line {linenum} with {len(fields)} fields')
-            continue
-
-        sid = fields[0]
-
-        if sid == '1':
-            # sentence boundary
-            if tokens:
-                sentences.append({
-                    'text': ''.join(tokens).rstrip(' '), 'lemmas': lemmas, 'pos': pos
-                })
-
-            tokens = []
-            lemmas = []
-            pos = []
-
-        token = fields[1].replace(' ', '')
-        lemma = fields[2].replace(' ', '')
-        space_after = fields[9] != 'SpaceAfter=No'
-
-        if space_after:
-            token = token + ' '
-
-        tokens.append(token)
-        lemmas.append(lemma)
-        pos.append(fields[3])
-
-    if tokens:
-        sentences.append({
-            'text': ''.join(tokens).rstrip(' '), 'lemmas': lemmas, 'pos': pos
-        })
-
-    return sentences
-
-
 def count_tokens(sentences):
-    return np.sum([len(x['lemmas']) for x in sentences])
+    return sum(s.count_tokens() for s in sentences)
 
 
 def align_sequences(seq_a, seq_b):
@@ -329,6 +299,33 @@ def write_errors(f, errors):
         f.write('\n')
 
         f.write('-'*80)
+        f.write('\n')
+
+
+def write_results_conllu(f, predicted):
+    """Write the predicted lemmas and POS tags to a CoNLL-U file.
+
+    The dependency relations are obviously bogus. There must be some
+    dependencies because the evaluation script expects them, but because we
+    are not evaluating the dependency scores, it doesn't matter what
+    dependencies we have here.
+    """
+    for pred in predicted:
+        observed_words = pred['texts']
+        observed_lemmas = pred['lemmas']
+        observed_pos = pred['pos']
+
+        it = zip_longest(observed_words, observed_lemmas, observed_pos, fillvalue='')
+        for i, (orth, lemma, pos) in enumerate(it):
+            nlemma = remove_compund_word_boundary_markers(lemma)
+            if i == 0:
+                fake_head = '0'
+                fake_rel = 'root'
+            else:
+                fake_head = '1'
+                fake_rel = 'dep'
+
+            f.write(f'{i + 1}\t{orth}\t{nlemma}\t{pos}\t_\t_\t{fake_head}\t{fake_rel}\t_\t_\n')
         f.write('\n')
 
 
