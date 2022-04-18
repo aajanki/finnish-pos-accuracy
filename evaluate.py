@@ -31,7 +31,8 @@ def main(
         FinnPos(),
         SpacyFiExperimental(),
         Stanza(),
-        Trankit(),
+        Trankit('base'),
+        Trankit('large'),
         Simplemma(),
         UralicNLP(),
     ]

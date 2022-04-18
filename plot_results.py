@@ -32,7 +32,7 @@ def main():
 
     model_order = [
         'Voikko', 'UDPipe', 'stanza', 'Turku parser', 'FinnPos', 'spacy-fi',
-        'trankit', 'simplemma', 'uralicnlp'
+        'trankit-base', 'trankit-large', 'simplemma', 'uralicnlp'
     ]
     model_order = [x for x in model_order if x in results['model'].unique()]
 

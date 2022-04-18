@@ -16,6 +16,8 @@ print('Downloading Trankit model...')
 # Initializing the trankit Pipeline will download the models if they are not
 # already downloaded
 trankit.Pipeline('finnish', cache_dir='models/trankit_resources')
+trankit.Pipeline('finnish', embedding='xml-roberta-large',
+                 cache_dir='models/trankit_resources')
 
 print('Downloading UralicNLP model...')
 uralicApi.download("fin")

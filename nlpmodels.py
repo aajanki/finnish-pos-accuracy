@@ -329,12 +329,18 @@ class SpacyFiExperimental:
 
 
 class Trankit:
-    def __init__(self):
-        self.name = 'trankit'
+    def __init__(self, embedding='base'):
+        if embedding not in ['base', 'large']:
+            raise ValueError(f'Unknown embedding: {embedding}')
+
+        self.name = f'trankit-{embedding}'
+        self.embedding = f'xlm-roberta-{embedding}'
         self.nlp = None
 
     def initialize(self):
-        self.nlp = trankit.Pipeline('finnish', cache_dir='models/trankit_resources')
+        self.nlp = trankit.Pipeline('finnish',
+                                    embedding=self.embedding,
+                                    cache_dir='models/trankit_resources')
 
     def parse(self, texts):
         res = []
