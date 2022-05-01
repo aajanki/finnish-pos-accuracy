@@ -25,6 +25,7 @@ class UDPipe:
     def __init__(self, language='fi-tdt'):
         self.name = f'UDPipe-{language}'
         self.language = language
+        self.tokenizer_is_destructive = True
         self.nlp = None
 
     def initialize(self):
@@ -32,6 +33,15 @@ class UDPipe:
 
     def parse(self, texts):
         return process_spacy(self.nlp, texts)
+
+    def fix_surface_forms(self, destructive_tokenization, gold_sentence):
+        # This is not even trying to be general, but fixes just enough for the
+        # CoNLL evaluation to run. The correct fix would be to handle these as
+        # multi-word tokens.
+        if len(destructive_tokenization) > 5 and destructive_tokenization[5] == 'En':
+            return destructive_tokenization[:5] + ['Em'] + destructive_tokenization[6:]
+        else:
+            return destructive_tokenization
 
 
 class Voikko:
@@ -57,6 +67,7 @@ class Voikko:
             'lukusana': 'NUM',
             'etuliite': 'X'
         }
+        self.tokenizer_is_destructive = False
 
     def initialize(self):
         self.voikko = libvoikko.Voikko('fi')
@@ -125,6 +136,7 @@ class TurkuNeuralParser:
     def __init__(self):
         self.name = 'Turku-neural-parser'
         self.server_process = None
+        self.tokenizer_is_destructive = False
 
     def __del__(self):
         self.stop()
@@ -174,6 +186,7 @@ class TurkuNeuralParser:
             batch = [x for x in batch if x is not None]
             sentences = self._process_sentences(batch)
             for sentence in sentences:
+                ids = []
                 words = []
                 lemmas = []
                 pos = []
@@ -185,23 +198,45 @@ class TurkuNeuralParser:
                     fields = line.split('\t')
                     assert len(fields) == 10
 
+                    # IDs are saved to keep multi-word tokens (IDs such as 3-4)
+                    ids.append(fields[0])
                     words.append(fields[1])
                     lemmas.append(fields[2])
                     pos.append(fields[3])
 
-                res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
+                res.append({'id': ids, 'texts': words, 'lemmas': lemmas, 'pos': pos})
 
         return res
 
-    def split_sentences(self, response):
+    def _split_sentences(self, response):
         sentences = []
-        for block in response.split('\n\n'):
-            if block.startswith('# newpar') or block.startswith('# newdoc') or not sentences:
+        current = []
+        first_token_is_multiword = False
+        for line in response.split('\n'):
+            if line.startswith('#') or line == '':
+                continue
+
+            if line.startswith('1-'):
                 # sentence boundary
-                sentences.append(block)
+                if current:
+                    sentences.append('\n'.join(current))
+
+                current = [line]
+                first_token_is_multiword = True
+            elif line.startswith('1\t') and not first_token_is_multiword:
+                # sentence boundary
+                if current:
+                    sentences.append('\n'.join(current))
+
+                current = [line]
+                first_token_is_multiword = False
             else:
                 # sentence continues
-                sentences[-1] = sentences[-1] + block
+                current.append(line)
+                first_token_is_multiword = False
+
+        if current:
+            sentences.append('\n'.join(current))
 
         return sentences
 
@@ -211,13 +246,14 @@ class TurkuNeuralParser:
                           headers={'Content-Type': 'text/plain; charset=utf-8'})
         r.raise_for_status()
 
-        return self.split_sentences(r.text)
+        return self._split_sentences(r.text)
 
 
 class FinnPos:
     def __init__(self):
         self.name = 'FinnPos'
         self.voikko = None
+        self.tokenizer_is_destructive = False
 
     def initialize(self):
         self.voikko = libvoikko.Voikko('fi')
@@ -293,6 +329,7 @@ class FinnPos:
 class Stanza:
     def __init__(self):
         self.name = 'stanza'
+        self.tokenizer_is_destructive = True
         self.nlp = None
 
     def initialize(self):
@@ -315,10 +352,24 @@ class Stanza:
             res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
         return res
 
+    def fix_surface_forms(self, destructive_tokenization, gold_sentence):
+        # This is not even trying to be general, but fixes just enough for the
+        # CoNLL evaluation to run. The correct fix would be to handle these as
+        # multi-word tokens.
+        if destructive_tokenization[0] == 'Eivtta':
+            return ['Ei'] + destructive_tokenization[1:]
+        elif destructive_tokenization[0] == 'EEttä':
+            return ['Ett'] + destructive_tokenization[1:]
+        elif len(destructive_tokenization) > 11 and destructive_tokenization[11] == 'mittä':
+            return destructive_tokenization[:11] + ['milt'] + destructive_tokenization[12:]
+        else:
+            return destructive_tokenization
+
 
 class SpacyFiExperimental:
     def __init__(self):
         self.name = 'spacy-fi'
+        self.tokenizer_is_destructive = False
         self.nlp = None
 
     def initialize(self):
@@ -336,6 +387,7 @@ class Trankit:
         self.name = f'trankit-{embedding}'
         self.embedding = f'xlm-roberta-{embedding}'
         self.nlp = None
+        self.tokenizer_is_destructive = False
 
     def initialize(self):
         self.nlp = trankit.Pipeline('finnish',
@@ -369,6 +421,7 @@ class Simplemma:
     def __init__(self):
         self.name = 'simplemma'
         self.langdata = None
+        self.tokenizer_is_destructive = True
 
     def initialize(self):
         self.langdata = simplemma.load_data('fi')
@@ -385,12 +438,37 @@ class Simplemma:
             res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
         return res
 
+    def fix_surface_forms(self, destructive_tokenization, gold_sentence):
+        # The tokenizer leaves out some punctuation. Let's try to add it back.
+        i = 0
+        text = gold_sentence.text()
+        non_destructive_tokenization = []
+        for t in destructive_tokenization:
+            m = re.compile(r'\s*(\W{1,2}\s*)?' + re.escape(t)).match(text, i)
+            if m:
+                prefix = m.group(1) or ''
+
+                i = m.end()
+                m2 = re.compile(r'\s*(?:´|--)').match(text, i)
+                if m2:
+                    i = m2.end()
+                    suffix = m2.group(0)
+                else:
+                    suffix = ''
+
+                non_destructive_tokenization.append(prefix + t + suffix)
+            else:
+                raise ValueError('Failed to align tokenization')
+
+        return non_destructive_tokenization
+
 
 class UralicNLP:
     def __init__(self):
         self.name = 'uralicnlp'
         self.cg = None
         self.voikko = None
+        self.tokenizer_is_destructive = False
 
     def initialize(self):
         self.cg = Cg3('fin')
