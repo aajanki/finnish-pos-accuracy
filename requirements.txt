@@ -8,9 +8,9 @@ spacy==3.3.0
 https://github.com/aajanki/spacy-fi/releases/download/v0.10.0b1/spacy_fi_experimental_web_md-0.10.0b1-py3-none-any.whl
 voikko==0.5
 typer==0.4.1
-stanza==1.3.0
+stanza==1.4.0
 trankit==1.1.1
-simplemma==0.5.0
+simplemma==0.6.0
 uralicNLP==1.3.0
 
 # Turku neural parser pipeline
