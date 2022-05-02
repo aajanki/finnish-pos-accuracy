@@ -388,6 +388,7 @@ class SpacyCoreFi:
     def __init__(self, model_name):
         self.name = f'spacy-{model_name}'
         self.model_name = model_name
+        self.tokenizer_is_destructive = False
         self.nlp = None
 
     def initialize(self):
