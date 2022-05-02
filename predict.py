@@ -100,7 +100,7 @@ def predict_lemma_and_pos(model, testset, outputdir):
 
 
 def remove_compund_word_boundary_markers(word):
-    return re.sub(r'(?<=\w)#(?=\w)', '', word)
+    return re.sub(r'(?<=[-–\w])#(?=\w)', '', word)
 
 
 def write_results_conllu(f, predicted):

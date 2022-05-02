@@ -9,6 +9,7 @@ and fixes various other issues (the FTB datasets are quite broken).
 import logging
 import os
 import os.path
+import re
 
 
 def main():
@@ -138,6 +139,7 @@ def preprocess(filename, inputdir, destdir, tag_map, aux_from_deprel):
                     num_non_continuous_index += 1
                     cols[0] = str(prev_index + 1)
 
+                cols[2] = remove_compound_word_boundaries(cols[2])
                 cols[3] = normalize_pos(cols[3], tag_map)
 
                 if is_invalid_pos_tag(cols[3]):
@@ -216,6 +218,10 @@ def split_into_sentences(lines):
 
     if sentence:
         yield sentence
+
+
+def remove_compound_word_boundaries(lemma):
+    return re.sub(r'(?<=[-–\w])#(?=\w)', '', lemma)
 
 
 def normalize_pos(pos, tag_map):
