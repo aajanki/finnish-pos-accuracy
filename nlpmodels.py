@@ -34,14 +34,17 @@ class UDPipe:
     def parse(self, texts):
         return process_spacy(self.nlp, texts)
 
-    def fix_surface_forms(self, destructive_tokenization, gold_sentence):
+    def fix_surface_forms(self, system_sentence, gold_sentence):
         # This is not even trying to be general, but fixes just enough for the
-        # CoNLL evaluation to run. The correct fix would be to handle these as
-        # multi-word tokens.
-        if len(destructive_tokenization) > 5 and destructive_tokenization[5] == 'En':
-            return destructive_tokenization[:5] + ['Em'] + destructive_tokenization[6:]
+        # CoNLL evaluation to run.
+        assert 'id' not in system_sentence
+
+        texts = system_sentence['texts']
+        if (len(gold_sentence.tokens) > 5 and gold_sentence.tokens[5].text == 'Emmä'
+                and len(texts) > 5 and texts[5] == 'En'):
+            return insert_multi_word(system_sentence, 5, '6-7', 'Emmä')
         else:
-            return destructive_tokenization
+            return system_sentence
 
 
 class Voikko:
@@ -352,18 +355,20 @@ class Stanza:
             res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
         return res
 
-    def fix_surface_forms(self, destructive_tokenization, gold_sentence):
+    def fix_surface_forms(self, system_sentence, gold_sentence):
         # This is not even trying to be general, but fixes just enough for the
-        # CoNLL evaluation to run. The correct fix would be to handle these as
-        # multi-word tokens.
-        if destructive_tokenization[0] == 'Eivtta':
-            return ['Ei'] + destructive_tokenization[1:]
-        elif destructive_tokenization[0] == 'EEttä':
-            return ['Ett'] + destructive_tokenization[1:]
-        elif len(destructive_tokenization) > 11 and destructive_tokenization[11] == 'mittä':
-            return destructive_tokenization[:11] + ['milt'] + destructive_tokenization[12:]
+        # CoNLL evaluation to run.
+        assert 'id' not in system_sentence
+
+        texts = system_sentence['texts']
+        if texts[0] == 'Eivtta' and texts[1] == 'vät':
+            return insert_multi_word(system_sentence, 0, '1-2', 'Eivät')
+        elif texts[0] == 'EEttä' and texts[1] == 'ekö':
+            return insert_multi_word(system_sentence, 0, '1-2', 'Ettekö')
+        elif len(texts) > 11 and texts[11] == 'mittä':
+            return insert_multi_word(system_sentence, 11, '12-13', 'miltei')
         else:
-            return destructive_tokenization
+            return system_sentence
 
 
 class SpacyFiExperimental:
@@ -387,7 +392,7 @@ class Trankit:
         self.name = f'trankit-{embedding}'
         self.embedding = f'xlm-roberta-{embedding}'
         self.nlp = None
-        self.tokenizer_is_destructive = False
+        self.tokenizer_is_destructive = True
 
     def initialize(self):
         self.nlp = trankit.Pipeline('finnish',
@@ -415,6 +420,24 @@ class Trankit:
             res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
 
         return res
+
+    def fix_surface_forms(self, system_sentence, gold_sentence):
+        # This is not even trying to be general, but fixes just enough for the
+        # CoNLL evaluation to run.
+        assert 'id' not in system_sentence
+
+        text = system_sentence['texts']
+        if text[0] == 'Miksi' and text[1] == 'ei' and gold_sentence.tokens[0].text == 'Eikö':
+            fixed = insert_multi_word(system_sentence, 0, '1-2', 'Eikö')
+
+            if text[7] == 'eta' and text[8] == 'ei':
+                return insert_multi_word(fixed, 8 + 1, '8-9', 'ei')
+            else:
+                return fixed
+        elif len(text) > 6 and text[5] == 'en' and text[6] == 'mä' and gold_sentence.tokens[5].text == 'Emmä':
+            return insert_multi_word(system_sentence, 5, '6-7', 'Emmä')
+        else:
+            return system_sentence
 
 
 class Simplemma:
@@ -547,6 +570,24 @@ def chunks(iterable, n):
     """Collect data into non-overlapping fixed-length chunks"""
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=None)
+
+
+def insert_multi_word(sentence, index, multi_word_id, text):
+    ids = [str(x) for x in range(1, len(sentence['texts']) + 1)]
+    ids.insert(index, multi_word_id)
+    texts = list(sentence['texts'])
+    texts.insert(index, text)
+    pos = list(sentence['pos'])
+    pos.insert(index, '_')
+    lemmas = list(sentence['lemmas'])
+    lemmas.insert(index, '_')
+
+    return {
+        'id': ids,
+        'texts': texts,
+        'lemmas': lemmas,
+        'pos': pos,
+    }
 
 
 all_models = [

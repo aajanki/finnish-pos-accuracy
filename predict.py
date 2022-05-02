@@ -76,8 +76,7 @@ def predict_lemma_and_pos(model, testset, outputdir):
         # TODO: Support for arbitrary sentence splits
         assert len(predicted) == len(testset.sentences)
         for system, gold in zip(predicted, testset.sentences):
-            system_fixed = dict(system)
-            system_fixed['texts'] = model.fix_surface_forms(system['texts'], gold)
+            system_fixed = model.fix_surface_forms(system, gold)
             updated_predicted.append(system_fixed)
 
         predicted = updated_predicted
@@ -124,7 +123,10 @@ def write_results_conllu(f, predicted):
         it = zip_longest(ids, observed_words, observed_lemmas, observed_pos, fillvalue='')
         for (i, orth, lemma, pos) in it:
             nlemma = remove_compund_word_boundary_markers(lemma)
-            if i == '1':
+            if '-' in i:
+                fake_head = '_'
+                fake_rel = '_'
+            elif i == '1':
                 fake_head = '0'
                 fake_rel = 'root'
             else:
