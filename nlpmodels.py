@@ -475,10 +475,11 @@ class Simplemma:
             res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
         return res
 
-    def fix_surface_forms(self, destructive_tokenization, gold_sentence):
+    def fix_surface_forms(self, system_sentence, gold_sentence):
         # The tokenizer leaves out some punctuation. Let's try to add it back.
         i = 0
         text = gold_sentence.text()
+        destructive_tokenization = system_sentence['texts']
         non_destructive_tokenization = []
         for t in destructive_tokenization:
             m = re.compile(r'\s*(\W{1,2}\s*)?' + re.escape(t)).match(text, i)
@@ -497,7 +498,9 @@ class Simplemma:
             else:
                 raise ValueError('Failed to align tokenization')
 
-        return non_destructive_tokenization
+        fixed = dict(system_sentence)
+        fixed['texts'] = non_destructive_tokenization
+        return fixed
 
 
 class UralicNLP:
