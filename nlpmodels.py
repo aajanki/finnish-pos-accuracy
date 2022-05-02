@@ -371,9 +371,9 @@ class Stanza:
             return system_sentence
 
 
-class SpacyFiExperimental:
+class SpacyExperimentalFi:
     def __init__(self):
-        self.name = 'spacy-fi'
+        self.name = 'spacy-fi_experimental_web_md'
         self.tokenizer_is_destructive = False
         self.nlp = None
 
@@ -381,7 +381,20 @@ class SpacyFiExperimental:
         self.nlp = spacy.load('spacy_fi_experimental_web_md')
 
     def parse(self, texts):
-        return process_spacy(self.nlp, texts)
+        return process_spacy(self.nlp, texts, ['ner', 'parser'])
+
+
+class SpacyCoreFi:
+    def __init__(self, model_name):
+        self.name = f'spacy-{model_name}'
+        self.model_name = model_name
+        self.nlp = None
+
+    def initialize(self):
+        self.nlp = spacy.load(self.model_name)
+
+    def parse(self, texts):
+        return process_spacy(self.nlp, texts, ['ner', 'parser'])
 
 
 class Trankit:
@@ -557,8 +570,9 @@ class UralicNLP:
             return 'X'
 
 
-def process_spacy(nlp, texts):
-    docs = list(nlp.pipe(texts, disable=['ner', 'parser', 'morphologizer']))
+def process_spacy(nlp, texts, disable=None):
+    disable = disable or ['ner', 'parser', 'morphologizer']
+    docs = list(nlp.pipe(texts, disable=disable))
     return [{
         'texts': [t.text for t in doc],
         'lemmas': [t.lemma_ for t in doc],
@@ -595,7 +609,10 @@ all_models = [
     Voikko(),
     TurkuNeuralParser(),
     FinnPos(),
-    SpacyFiExperimental(),
+    SpacyCoreFi('fi_core_news_sm'),
+    SpacyCoreFi('fi_core_news_md'),
+    SpacyCoreFi('fi_core_news_lg'),
+    SpacyExperimentalFi(),
     Stanza(),
     Trankit('base'),
     Trankit('large'),

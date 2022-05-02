@@ -27,7 +27,9 @@ def main():
                              (full_results['Dataset'] == 'ftb1u'))]
 
     model_order = [
-        'Voikko', 'UDPipe', 'stanza', 'Turku parser', 'FinnPos', 'spacy-fi',
+        'Voikko', 'UDPipe', 'stanza', 'Turku parser', 'FinnPos',
+        'spacy-fi_core_news_sm', 'spacy-fi_core_news_md', 'spacy-fi_core_news_lg',
+        'spacy-fi_experimental_web_md',
         'trankit-base', 'trankit-large', 'simplemma', 'uralicnlp'
     ]
     model_order = [x for x in model_order if x in results['Model'].unique()]
