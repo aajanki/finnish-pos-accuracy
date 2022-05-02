@@ -547,3 +547,17 @@ def chunks(iterable, n):
     """Collect data into non-overlapping fixed-length chunks"""
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=None)
+
+
+all_models = [
+    UDPipe('fi-tdt'),
+    Voikko(),
+    TurkuNeuralParser(),
+    FinnPos(),
+    SpacyFiExperimental(),
+    Stanza(),
+    Trankit('base'),
+    Trankit('large'),
+    Simplemma(),
+    UralicNLP(),
+]

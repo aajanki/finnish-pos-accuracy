@@ -1,3 +1,4 @@
+from pathlib import Path
 from preprocess_data import split_into_sentences
 
 
@@ -22,6 +23,9 @@ class Dataset:
                     tokens.append(Token(text, lemma, fields[3], space_after))
             sentences.append(TestSentence(tokens))
         return sentences
+
+    def count_tokens(self):
+        return sum(s.count_tokens() for s in self.sentences)
 
 
 class Token:
@@ -52,3 +56,22 @@ class TestSentence:
 
     def count_tokens(self):
         return len(self.tokens)
+
+
+def gold_path(testset_name):
+    return {
+        'UD_Finnish_TDT': Path('data/preprocessed/UD_Finnish-TDT/fi_tdt-ud-test.conllu'),
+        'ftb1u': Path('data/preprocessed/ftb1/ftb1u_sample.tsv'),
+        'ftb2-news': Path('data/preprocessed/ftb2/FinnTreeBank_2/news-samples_tab.txt'),
+        'ftb2-sofie': Path('data/preprocessed/ftb2/FinnTreeBank_2/sofie12_tab.txt'),
+        'ftb2-wikipedia': Path('data/preprocessed/ftb2/FinnTreeBank_2/wikipedia-samples_tab.txt'),
+    }.get(testset_name)
+
+
+all_testsets = [
+    Dataset('UD_Finnish_TDT', gold_path('UD_Finnish_TDT')),
+    Dataset('ftb1u', gold_path('ftb1u')),
+    Dataset('ftb2-news', gold_path('ftb2-news')),
+    Dataset('ftb2-sofie', gold_path('ftb2-sofie')),
+    Dataset('ftb2-wikipedia', gold_path('ftb2-wikipedia'))
+]
