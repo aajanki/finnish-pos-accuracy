@@ -5,21 +5,22 @@ source Finnish part-of-speech taggers and lemmatization algorihtms.
 
 ### Tested algorithms
 
-* [Experimental Finnish model for spaCy](https://github.com/aajanki/spacy-fi)
-* [FinnPos](https://github.com/mpsilfve/FinnPos/wiki)
-* [Simplemma](https://github.com/adbar/simplemma/)
-* [Stanza](https://stanfordnlp.github.io/stanza/)
-* [Trankit](https://trankit.readthedocs.io/en/latest/)
-* [Turku neural parser pipeline](https://turkunlp.org/Turku-neural-parser-pipeline/)
-* [UDPipe](http://ufal.mff.cuni.cz/udpipe) (through spacy-udpipe)
-* [UralicNLP](https://github.com/mikahama/uralicNLP)
-* [Voikko](https://voikko.puimula.org/)
+* [spaCy](https://spacy.io/) 3.3.0
+* [Experimental Finnish model for spaCy](https://github.com/aajanki/spacy-fi) 0.10.0b1
+* [FinnPos](https://github.com/mpsilfve/FinnPos/wiki) git commit 81c1f735 (Oct 2019)
+* [Simplemma](https://github.com/adbar/simplemma/) 0.6.0
+* [Stanza](https://stanfordnlp.github.io/stanza/) 1.4.0
+* [Trankit](https://trankit.readthedocs.io/en/latest/) 1.1.1
+* [Turku neural parser pipeline](https://turkunlp.org/Turku-neural-parser-pipeline/) git commit 8c9425dd (Jan 2022)
+* [UDPipe](http://ufal.mff.cuni.cz/udpipe) (through spacy-udpipe 1.0.0)
+* [UralicNLP](https://github.com/mikahama/uralicNLP) 1.3.0
+* [libvoikko](https://voikko.puimula.org/) 4.3.1 and Python voikko module 0.5
 
 ### Test datasets
 
-* [FinnTreeBank 1](https://github.com/UniversalDependencies/UD_Finnish-FTB/blob/master/README.md): randomly sampled subset of about 1000 sentences
+* [FinnTreeBank 1](https://github.com/UniversalDependencies/UD_Finnish-FTB/blob/master/README.md) v1: randomly sampled subset of about 1000 sentences
 * [FinnTreeBank 2](http://urn.fi/urn:nbn:fi:lb-201407163): news, Sofie and Wikipedia subsets
-* [Turku Dependency Treebank](https://github.com/UniversalDependencies/UD_Finnish-TDT): the testset
+* [UD_Finnish-TDT](https://github.com/UniversalDependencies/UD_Finnish-TDT) r2.9: the testset
 
 ## Setup
 
@@ -29,7 +30,7 @@ Install dependencies:
 * clang (or other C++ compiler)
 * Dependencies needed to compile [FinnPos](https://github.com/mpsilfve/FinnPos) and [cg3](https://github.com/GrammarSoft/cg3)
 
-Setup git submodules, create a Python virtual environment and download test data and models by running the following commands:
+Setup git submodules, create a Python 3.9 (must be 3.9 because the Turku parser is incompatible with more recent Python versions) virtual environment and download test data and models by running the following commands:
 ```
 git submodule init
 git submodule update
@@ -41,25 +42,12 @@ pip install -r requirements.txt
 
 ./download_data.sh
 ./download_models.sh
-python preprocess_data.py
 ```
 
 ## Run
 
 ```
-export PATH=$(pwd)/models/cg3/src:$PATH
-
-# Predict lemmas and POS tags using all models.
-# Writes results under results/predictions/*/
-python predict.py
-
-# Evaluate by comparing the predictions with the gold standard data.
-# Writes results to results/evaluation.csv
-python evaluate.py
-
-# Plot the evaluations.
-# Saves the plots under results/images/
-python plot_results.py
+./run.sh
 ```
 
 The numerical results will be saved in results/evaluation.csv, POS and
