@@ -69,8 +69,9 @@ def predict_lemma_and_pos(model, testset, outputdir):
     duration = time.time() - t0
 
     if model.tokenizer_is_destructive:
-        # Fix the surface forms so that they match exactly with the original
-        # text as required by the CoNLL evaluation script.
+        # If model's tokenizer doesn't preserve the surface forms exactly,
+        # fix them to match the original text as required by the CoNLL
+        # evaluation script.
         updated_predicted = []
 
         # TODO: Support for arbitrary sentence splits

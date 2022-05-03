@@ -441,15 +441,15 @@ class Trankit:
         assert 'id' not in system_sentence
 
         text = system_sentence['texts']
-        if text[0] == 'Miksi' and text[1] == 'ei' and gold_sentence.tokens[0].text == 'Eikö':
+        if text[0:2] == ['Miksi', 'ei'] and gold_sentence.tokens[0].text == 'Eikö' and text[7:9] == ['eta', 'ei']:
             fixed = insert_multi_word(system_sentence, 0, '1-2', 'Eikö')
-
-            if text[7] == 'eta' and text[8] == 'ei':
-                return insert_multi_word(fixed, 8 + 1, '8-9', 'ei')
-            else:
-                return fixed
-        elif len(text) > 6 and text[5] == 'en' and text[6] == 'mä' and gold_sentence.tokens[5].text == 'Emmä':
+            return insert_multi_word(fixed, 8, '8-9', 'ei', fixed['id'])
+        elif text[0:2] == ['Miksi', 'ei'] and gold_sentence.tokens[0].text == 'Eikö':
+            return insert_multi_word(system_sentence, 0, '1-2', 'Eikö')
+        elif len(text) > 6 and text[5:7] == ['en', 'mä'] and gold_sentence.tokens[5].text == 'Emmä':
             return insert_multi_word(system_sentence, 5, '6-7', 'Emmä')
+        elif len(text) > 8 and text[6:8] == ['ett', 'että'] and gold_sentence.tokens[6].text == 'ett':
+            return insert_multi_word(system_sentence, 6, '7-8', 'ett')
         else:
             return system_sentence
 
@@ -508,7 +508,7 @@ class UralicNLP:
         self.name = 'uralicnlp'
         self.cg = None
         self.voikko = None
-        self.tokenizer_is_destructive = False
+        self.tokenizer_is_destructive = True
 
     def initialize(self):
         self.cg = Cg3('fin')
@@ -573,6 +573,19 @@ class UralicNLP:
         else:
             return 'X'
 
+    def fix_surface_forms(self, system_sentence, gold_sentence):
+        # This is not even trying to be general, but fixes just enough for the
+        # CoNLL evaluation to run.
+        assert 'id' not in system_sentence
+
+        text = system_sentence['texts']
+        if len(text) > 15 and text[14:16] == ['suomea', 'kieli'] and gold_sentence.tokens[14].text == 'suomea' and gold_sentence.tokens[15].text == '.':
+            return insert_multi_word(system_sentence, 14, '15-16', 'suomea')
+        elif len(text) > 10 and text[9:11] == ['kiinaksi', 'kieli'] and gold_sentence.tokens[9].text == 'kiinaksi' and gold_sentence.tokens[10].text == '.':
+            return insert_multi_word(system_sentence, 9, '10-11', 'kiinaksi')
+        else:
+            return system_sentence
+
 
 def process_spacy(nlp, texts, disable=None):
     disable = disable or ['ner', 'parser', 'morphologizer']
@@ -590,8 +603,11 @@ def chunks(iterable, n):
     return zip_longest(*args, fillvalue=None)
 
 
-def insert_multi_word(sentence, index, multi_word_id, text):
-    ids = [str(x) for x in range(1, len(sentence['texts']) + 1)]
+def insert_multi_word(sentence, index, multi_word_id, text, ids=None):
+    if ids is None:
+        ids = [str(x) for x in range(1, len(sentence['texts']) + 1)]
+    else:
+        ids = list(ids)
     ids.insert(index, multi_word_id)
     texts = list(sentence['texts'])
     texts.insert(index, text)
