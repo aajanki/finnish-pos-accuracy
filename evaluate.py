@@ -1,6 +1,7 @@
 import json
 import logging
 import conll18_ud_eval
+import numpy as np
 import pandas as pd
 import typer
 from datasets import gold_path
@@ -62,11 +63,18 @@ def evaluate_model(predictions_file, gold_file, metadata_file):
 
 
 def ud_evaluation_to_metrics(evaluation, key_prefix):
+    f1 = evaluation.f1
+    precision = evaluation.precision
+    recall = evaluation.recall
+    aligned_accuracy = evaluation.aligned_accuracy
+    if f1 == 0 and precision == 0 and recall == 0 and aligned_accuracy == 0:
+        f1 = precision = recall = aligned_accuracy = np.NaN
+
     return {
-        key_prefix + 'F1': evaluation.f1,
-        key_prefix + 'precision': evaluation.precision,
-        key_prefix + 'recall': evaluation.recall,
-        key_prefix + 'aligned accuracy': evaluation.aligned_accuracy,
+        key_prefix + 'F1': f1,
+        key_prefix + 'precision': precision,
+        key_prefix + 'recall': recall,
+        key_prefix + 'aligned accuracy': aligned_accuracy,
     }
 
 
