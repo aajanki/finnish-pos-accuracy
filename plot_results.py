@@ -14,12 +14,14 @@ def main():
     full_results['Model'] = (
         full_results['Model']
         .replace({
-            'Turku-neural-parser': 'Turku parser',
-            'UDPipe-fi-tdt': 'UDPipe',
+            'turku-neural-parser': 'Turku parser',
+            'udpipe-fi-tdt': 'UDPipe',
             'spacy-fi_core_news_sm': 'spacy-sm',
             'spacy-fi_core_news_md': 'spacy-md',
             'spacy-fi_core_news_lg': 'spacy-lg',
             'spacy-fi_experimental_web_md': 'spacy-experimental',
+            'finnpos': 'FinnPos',
+            'voikko': 'Voikko',
         }))
     full_results = full_results.rename(columns={
         'UPOS F1': 'Part-of-speech F1',

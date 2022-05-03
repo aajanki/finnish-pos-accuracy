@@ -23,7 +23,7 @@ class PosLemmaToken:
 
 class UDPipe:
     def __init__(self, language='fi-tdt'):
-        self.name = f'UDPipe-{language}'
+        self.name = f'udpipe-{language}'
         self.language = language
         self.tokenizer_is_destructive = True
         self.nlp = None
@@ -49,7 +49,7 @@ class UDPipe:
 
 class Voikko:
     def __init__(self):
-        self.name = 'Voikko'
+        self.name = 'voikko'
         self.voikko = None
         self.tag_map = {
             'nimisana': 'NOUN',
@@ -137,7 +137,7 @@ class Voikko:
 
 class TurkuNeuralParser:
     def __init__(self):
-        self.name = 'Turku-neural-parser'
+        self.name = 'turku-neural-parser'
         self.server_process = None
         self.tokenizer_is_destructive = False
 
@@ -254,7 +254,7 @@ class TurkuNeuralParser:
 
 class FinnPos:
     def __init__(self):
-        self.name = 'FinnPos'
+        self.name = 'finnpos'
         self.voikko = None
         self.tokenizer_is_destructive = False
 
