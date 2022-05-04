@@ -141,7 +141,7 @@ def main():
 
     results_by_model = results.groupby('Model').mean().reset_index()
 
-    label_left_lemma = ['FinnPos', 'stanza', 'simplemma', 'spacy-lg']
+    label_left_lemma = ['FinnPos', 'simplemma', 'spacy-lg']
 
     sns.relplot(x='Lemmatization F1', y='Tokens per second',
                 data=results_by_model, s=80)
@@ -154,6 +154,7 @@ def main():
                      horizontalalignment=ha, verticalalignment='center')
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
     plt.yscale('log')
+    plt.tight_layout()
     plt.savefig(imagedir / 'lemma_f1_speed.png')
     plt.close()
 
@@ -168,6 +169,7 @@ def main():
                      horizontalalignment=ha, verticalalignment='center')
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
     plt.yscale('log')
+    plt.tight_layout()
     plt.savefig(imagedir / 'lemma_acc_speed.png')
     plt.close()
 
@@ -184,6 +186,7 @@ def main():
                      horizontalalignment=ha, verticalalignment='center')
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
     plt.yscale('log')
+    plt.tight_layout()
     plt.savefig(imagedir / 'pos_f1_speed.png')
     plt.close()
 
@@ -198,6 +201,7 @@ def main():
                      horizontalalignment=ha, verticalalignment='center')
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
     plt.yscale('log')
+    plt.tight_layout()
     plt.savefig(imagedir / 'pos_acc_speed.png')
     plt.close()
 

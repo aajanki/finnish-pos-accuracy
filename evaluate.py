@@ -47,8 +47,8 @@ def evaluate_model(predictions_file, gold_file, metadata_file):
     with metadata_file.open() as meta:
         metadata = json.load(meta)
 
-    gold_ud = conll18_ud_eval.load_conllu_file(gold_file)
-    system_ud = conll18_ud_eval.load_conllu_file(predictions_file)
+    gold_ud = lowercase_lemmas(conll18_ud_eval.load_conllu_file(gold_file))
+    system_ud = lowercase_lemmas(conll18_ud_eval.load_conllu_file(predictions_file))
     evaluation = conll18_ud_eval.evaluate(gold_ud, system_ud)
 
     metrics = {}
@@ -60,6 +60,12 @@ def evaluate_model(predictions_file, gold_file, metadata_file):
     metrics['Tokens per second'] = metadata['num_tokens'] / duration
 
     return metrics
+
+
+def lowercase_lemmas(ud):
+    for w in ud.words:
+        w.columns[conll18_ud_eval.LEMMA] = w.columns[conll18_ud_eval.LEMMA].lower()
+    return ud
 
 
 def ud_evaluation_to_metrics(evaluation, key_prefix):
