@@ -18,3 +18,6 @@ python evaluate.py
 # Plot the evaluations.
 # Saves the plots under results/images/
 python plot_results.py
+
+# Save lemma error is results/errors/
+python print_errors.py
