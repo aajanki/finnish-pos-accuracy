@@ -1,6 +1,6 @@
-# Evaluating Finnish POS taggers and lemmatizers
+# Benchmarking Finnish POS taggers and lemmatizers
 
-This repository contains experiments comparing the accuracy of open
+This repository contains an evaluation of the accuracy of open
 source Finnish part-of-speech taggers and lemmatization algorihtms.
 
 ### Tested algorithms
@@ -40,6 +40,12 @@ source venv/bin/activate
 pip install wheel
 pip install -r requirements.txt
 
+# Compile FinnPos
+(cd models/FinnPos/src && make -j 4)
+
+# Compile cg3 in models/cg3
+# See https://visl.sdu.dk/cg3/chunked/installation.html
+
 ./download_data.sh
 ./download_models.sh
 ```
@@ -58,37 +64,33 @@ and plots will be saved in results/images.
 
 ### Lemmatization
 
-![Lemmatization error rates](images/lemma_wer_by_dataset.png)
+![Lemmatization speed](images/lemma_f1_speed.png)
 
-Lemmatization error rates (proportion of tokens where the predicted
-lemma differs from the ground truth lemma) for the tested algorithms
-on the test datasets.
-
-![Lemmatization speed](images/lemma_speed.png)
-
-Execution duration as a function of the average (over datasets) error
-rate. Lower values are better on both axes. Notice that the Y-axis is
+Execution duration as a function of the average (over datasets) F1 score. Larger values are better on both axes. Notice that the Y-axis is
 on log scale.
 
 The execution duration is measured as a batched evaluation (a batch
-contains all sentences from one dataset) on a 4 core CPU. Turku neural
-parser and StanfordNLP can be run on a GPU which most likely improves
+contains all sentences from one dataset) on a 4 core CPU. Some methods
+can be run on a GPU which most likely would improve
 their performance, but I haven't tested that.
+
+![Lemmatization error rates](images/lemma_f1_by_dataset.png)
+
+Lemmatization F1 scores for the benchmarked algorithms
+on the test datasets.
 
 ### Part-of-speech tagging
 
-![Part-of-speech error rates](images/pos_wer_by_dataset.png)
+![Part-of-speech speed](images/pos_f1_speed.png)
 
-Part-of-speech error rates for the tested algorithms.
+Execution duration as a function of the average POS F1 score.
 
 Note that FinnPos and Voikko do not make a distinction between
 auxiliary and main verbs and therefore their performance suffers by
-4-5% in this evaluation as they mispredict all AUX tags as VERBs.
+4-5% in this evaluation as they mislabel all AUX tags as VERBs.
 
-![Part-of-speech speed](images/pos_speed.png)
+![Part-of-speech error rates](images/pos_f1_by_dataset.png)
 
-Execution duration as a function of the average error rate.
+Part-of-speech F1 scores for the benchmarked algorithms.
 
-Comparing spacy-fi and StanfordNLP results, it seems that increasing
-the computational effort about 100-fold seems to improve the accuracy
-only by a small amount.
+Simplemma does not include a POS tagging feature.
