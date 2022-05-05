@@ -14,13 +14,16 @@ def main():
     full_results['Model'] = (
         full_results['Model']
         .replace({
-            'turku-neural-parser': 'Turku parser',
+            'turku-neural-parser': 'Turku pipeline',
             'udpipe-fi-tdt': 'UDPipe',
             'spacy-fi_core_news_sm': 'spacy-sm',
             'spacy-fi_core_news_md': 'spacy-md',
             'spacy-fi_core_news_lg': 'spacy-lg',
             'spacy-fi_experimental_web_md': 'spacy-experimental',
             'finnpos': 'FinnPos',
+            'uralicnlp': 'UralicNLP',
+            'stanza': 'Stanza',
+            'trankit': 'Trankit',
             'voikko': 'Voikko',
         }))
     full_results = full_results.rename(columns={
