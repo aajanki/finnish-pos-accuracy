@@ -144,7 +144,7 @@ def main():
 
     results_by_model = results.groupby('Model').mean().reset_index()
 
-    label_left_lemma = ['FinnPos', 'simplemma', 'spacy-lg']
+    label_left_lemma = ['Stanza', 'simplemma', 'spacy-lg']
 
     sns.relplot(x='Lemmatization F1', y='Tokens per second',
                 data=results_by_model, s=80)
@@ -161,6 +161,8 @@ def main():
     plt.savefig(imagedir / 'lemma_f1_speed.png')
     plt.close()
 
+    label_left_lemma = ['FinnPos', 'simplemma', 'spacy-lg']
+
     sns.relplot(x='Lemmatization aligned accuracy', y='Tokens per second',
                 data=results_by_model, s=80)
     for x, y, text in zip(results_by_model['Lemmatization aligned accuracy'],
@@ -176,7 +178,7 @@ def main():
     plt.savefig(imagedir / 'lemma_acc_speed.png')
     plt.close()
 
-    label_left_pos = ['Voikko', 'stanza', 'spacy-lg']
+    label_left_pos = ['Voikko', 'Stanza', 'spacy-lg']
 
     sns.relplot(x='Part-of-speech F1', y='Tokens per second',
                 data=results_by_model, s=80)

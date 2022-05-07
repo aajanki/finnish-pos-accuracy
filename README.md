@@ -6,7 +6,7 @@ source Finnish part-of-speech taggers and lemmatization algorihtms.
 ### Tested algorithms
 
 * [spaCy](https://spacy.io/) 3.3.0
-* [Experimental Finnish model for spaCy](https://github.com/aajanki/spacy-fi) 0.10.0b1
+* [Experimental Finnish model for spaCy](https://github.com/aajanki/spacy-fi) 0.10.0
 * [FinnPos](https://github.com/mpsilfve/FinnPos/wiki) git commit 81c1f735 (Oct 2019)
 * [Simplemma](https://github.com/adbar/simplemma/) 0.6.0
 * [Stanza](https://stanfordnlp.github.io/stanza/) 1.4.0
