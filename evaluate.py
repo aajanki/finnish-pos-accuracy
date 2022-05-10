@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import conll18_ud_eval
@@ -19,7 +20,7 @@ def main():
     evaluation_results = []
     for model_result_dir in model_result_dirs:
         model_name = model_result_dir.stem
-        testset_files = model_result_dir.glob('*.conllu')
+        testset_files = list(model_result_dir.glob('*.conllu'))
         for testset_file in testset_files:
             testset_name = testset_file.stem
             metadata_file = model_result_dir / f'{testset_name}.json'
@@ -27,28 +28,89 @@ def main():
             print()
             print(f'Evaluating {model_name} on {testset_name}')
 
-            metrics = evaluate_model(testset_file, gold_path(testset_name), metadata_file)
+            metrics = evaluate_model_files(gold_path(testset_name), testset_file, metadata_file)
 
             print(f'Lemma F1: {metrics["Lemmatization F1"]:.3f}')
             print(f'UPOS F1: {metrics["UPOS F1"]:.3f}')
             print(f'Duration: {metrics["Duration"]:.1f} s '
-                  f'({metrics["Sentences per second"]:.1f} sentences/s)')
+                  f'({metrics["Tokens per second"]:.1f} tokens/s)')
 
             metrics['Model'] = model_name
             metrics['Dataset'] = testset_name
 
             evaluation_results.append(metrics)
 
+        print()
+        print(f'Evaluating {model_name} on concatenated datasets')
+
+        data_files = [
+            (gold_path(tfile.stem), tfile, model_result_dir / f'{tfile.stem}.json')
+            for tfile in testset_files
+        ]
+        metrics = evaluate_concatenated(data_files)
+
+        print(f'Lemma F1: {metrics["Lemmatization F1"]:.3f}')
+        print(f'UPOS F1: {metrics["UPOS F1"]:.3f}')
+        print(f'Duration: {metrics["Duration"]:.1f} s '
+              f'({metrics["Tokens per second"]:.1f} tokens/s)')
+
+        metrics['Model'] = model_name
+        metrics['Dataset'] = 'concatenated'
+
+        evaluation_results.append(metrics)
+
     df = pd.DataFrame(evaluation_results)
     df.to_csv(outputdir / f'evaluation.csv', index=False)
 
 
-def evaluate_model(predictions_file, gold_file, metadata_file):
+def evaluate_model_files(gold_file, predictions_file, metadata_file):
     with metadata_file.open() as meta:
         metadata = json.load(meta)
 
-    gold_ud = lowercase_lemmas(conll18_ud_eval.load_conllu_file(gold_file))
-    system_ud = lowercase_lemmas(conll18_ud_eval.load_conllu_file(predictions_file))
+    gold_ud = conll18_ud_eval.load_conllu_file(gold_file)
+    system_ud = conll18_ud_eval.load_conllu_file(predictions_file)
+
+    return evaluate_model(gold_ud, system_ud, metadata)
+
+
+def evaluate_concatenated(data_files):
+    metadata = {
+        'duration': 0,
+        'num_sentences': 0,
+        'num_tokens': 0,
+    }
+
+    gold_data = []
+    predictions_data = []
+    for gold_file, predictions_file, metadata_file in data_files:
+        with metadata_file.open() as f:
+            meta = json.load(f)
+            metadata['duration'] += meta['duration']
+            metadata['num_sentences'] += meta['num_sentences']
+            metadata['num_tokens'] += meta['num_tokens']
+
+        with gold_file.open('r', encoding='utf-8') as f:
+            data = f.read()
+            data = ensure_ends_with_empty_line(data)
+            gold_data.append(data)
+
+        with predictions_file.open('r', encoding='utf-8') as f:
+            data = f.read()
+            data = ensure_ends_with_empty_line(data)
+            predictions_data.append(data)
+
+    gold_io = io.StringIO(''.join(gold_data))
+    gold_ud = conll18_ud_eval.load_conllu(gold_io)
+
+    predictions_io = io.StringIO(''.join(predictions_data))
+    system_ud = conll18_ud_eval.load_conllu(predictions_io)
+
+    return evaluate_model(gold_ud, system_ud, metadata)
+
+
+def evaluate_model(gold_ud, system_ud, metadata):
+    gold_ud = lowercase_lemmas(gold_ud)
+    system_ud = lowercase_lemmas(system_ud)
     evaluation = conll18_ud_eval.evaluate(gold_ud, system_ud)
 
     metrics = {}
@@ -82,6 +144,15 @@ def ud_evaluation_to_metrics(evaluation, key_prefix):
         key_prefix + 'recall': recall,
         key_prefix + 'aligned accuracy': aligned_accuracy,
     }
+
+
+def ensure_ends_with_empty_line(text):
+    if text.endswith('\n\n'):
+        return text
+    elif text.endswith('\n'):
+        return text + '\n'
+    else:
+        return text + '\n\n'
 
 
 if __name__ == '__main__':

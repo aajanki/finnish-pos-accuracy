@@ -35,13 +35,16 @@ def main():
 
     # Leave out the FinnPos evaluation on ftb1u, because ftb1u is the
     # training set for FinnPos
-    results = full_results[~((full_results['Model'] == 'FinnPos') &
-                             (full_results['Dataset'] == 'ftb1u'))]
+    full_results = full_results[~((full_results['Model'] == 'FinnPos') &
+                                (full_results['Dataset'] == 'ftb1u'))]
 
-    model_order = sorted(results['Model'].unique())
+    results_by_testset = full_results[full_results['Dataset'] != 'concatenated']
+    results_concatenated = full_results[full_results['Dataset'] == 'concatenated']
+
+    model_order = sorted(results_by_testset['Model'].unique())
 
     sns.barplot(x='Model', y='Lemmatization F1', hue='Dataset',
-                data=full_results, order=model_order)
+                data=results_by_testset, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.label.set_fontsize(9)
@@ -51,7 +54,7 @@ def main():
     plt.savefig(imagedir / 'lemma_f1_by_dataset.png')
     plt.close()
 
-    sns.barplot(x='Model', y='Lemmatization precision', data=results,
+    sns.barplot(x='Model', y='Lemmatization precision', data=results_by_testset,
                 hue='Dataset', order=model_order)
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.label.set_fontsize(9)
@@ -61,7 +64,7 @@ def main():
     plt.savefig(imagedir / 'lemma_precision_by_dataset.png')
     plt.close()
 
-    sns.barplot(x='Model', y='Lemmatization recall', data=results,
+    sns.barplot(x='Model', y='Lemmatization recall', data=results_by_testset,
                 hue='Dataset', order=model_order)
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.label.set_fontsize(9)
@@ -71,7 +74,7 @@ def main():
     plt.savefig(imagedir / 'lemma_recall_by_dataset.png')
     plt.close()
 
-    sns.barplot(x='Model', y='Lemmatization aligned accuracy', data=results, order=model_order)
+    sns.barplot(x='Model', y='Lemmatization aligned accuracy', data=results_concatenated, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.label.set_fontsize(9)
@@ -81,7 +84,7 @@ def main():
     plt.savefig(imagedir / 'lemma_acc.png')
     plt.close()
 
-    sns.barplot(x='Model', y='Lemmatization F1', data=results, order=model_order)
+    sns.barplot(x='Model', y='Lemmatization F1', data=results_concatenated, order=model_order)
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.label.set_fontsize(9)
     plt.xticks(rotation=70)
@@ -91,7 +94,7 @@ def main():
     plt.close()
 
     sns.barplot(x='Model', y='Part-of-speech F1', hue='Dataset',
-                data=full_results, order=model_order)
+                data=results_by_testset, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.label.set_fontsize(9)
@@ -102,7 +105,7 @@ def main():
     plt.close()
 
     sns.barplot(x='Model', y='Part-of-speech precision', hue='Dataset',
-                data=full_results, order=model_order)
+                data=results_by_testset, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.label.set_fontsize(9)
@@ -113,7 +116,7 @@ def main():
     plt.close()
 
     sns.barplot(x='Model', y='Part-of-speech recall', hue='Dataset',
-                data=full_results, order=model_order)
+                data=results_by_testset, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.label.set_fontsize(9)
@@ -123,7 +126,7 @@ def main():
     plt.savefig(imagedir / 'pos_recall_by_dataset.png')
     plt.close()
 
-    sns.barplot(x='Model', y='Part-of-speech aligned accuracy', data=results, order=model_order)
+    sns.barplot(x='Model', y='Part-of-speech aligned accuracy', data=results_concatenated, order=model_order)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.label.set_fontsize(9)
@@ -133,7 +136,7 @@ def main():
     plt.savefig(imagedir / 'pos_acc.png')
     plt.close()
 
-    sns.barplot(x='Model', y='Part-of-speech F1', data=results, order=model_order)
+    sns.barplot(x='Model', y='Part-of-speech F1', data=results_concatenated, order=model_order)
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.label.set_fontsize(9)
     plt.xticks(rotation=70)
@@ -142,15 +145,13 @@ def main():
     plt.savefig(imagedir / 'pos_f1.png')
     plt.close()
 
-    results_by_model = results.groupby('Model').mean().reset_index()
-
     label_left_lemma = ['Stanza', 'simplemma', 'spacy-lg']
 
     sns.relplot(x='Lemmatization F1', y='Tokens per second',
-                data=results_by_model, s=80)
-    for x, y, text in zip(results_by_model['Lemmatization F1'],
-                          results_by_model['Tokens per second'],
-                          results_by_model['Model']):
+                data=results_concatenated, s=80)
+    for x, y, text in zip(results_concatenated['Lemmatization F1'],
+                          results_concatenated['Tokens per second'],
+                          results_concatenated['Model']):
         ha = 'left' if text in label_left_lemma else 'right'
         textrelx = 7 if ha == 'left' else -5
         plt.annotate(text, (x, y), xytext=(textrelx, 0), textcoords='offset points',
@@ -164,10 +165,10 @@ def main():
     label_left_lemma = ['FinnPos', 'simplemma', 'spacy-lg']
 
     sns.relplot(x='Lemmatization aligned accuracy', y='Tokens per second',
-                data=results_by_model, s=80)
-    for x, y, text in zip(results_by_model['Lemmatization aligned accuracy'],
-                          results_by_model['Tokens per second'],
-                          results_by_model['Model']):
+                data=results_concatenated, s=80)
+    for x, y, text in zip(results_concatenated['Lemmatization aligned accuracy'],
+                          results_concatenated['Tokens per second'],
+                          results_concatenated['Model']):
         ha = 'left' if text in label_left_lemma else 'right'
         textrelx = 7 if ha == 'left' else -5
         plt.annotate(text, (x, y), xytext=(textrelx, 0), textcoords='offset points',
@@ -181,10 +182,10 @@ def main():
     label_left_pos = ['Voikko', 'Stanza', 'spacy-lg']
 
     sns.relplot(x='Part-of-speech F1', y='Tokens per second',
-                data=results_by_model, s=80)
-    for x, y, text in zip(results_by_model['Part-of-speech F1'],
-                          results_by_model['Tokens per second'],
-                          results_by_model['Model']):
+                data=results_concatenated, s=80)
+    for x, y, text in zip(results_concatenated['Part-of-speech F1'],
+                          results_concatenated['Tokens per second'],
+                          results_concatenated['Model']):
         ha = 'left' if text in label_left_pos else 'right'
         textrelx = 7 if ha == 'left' else -5
         plt.annotate(text, (x, y), xytext=(textrelx, 0), textcoords='offset points',
@@ -196,10 +197,10 @@ def main():
     plt.close()
 
     sns.relplot(x='Part-of-speech aligned accuracy', y='Tokens per second',
-                data=results_by_model, s=80)
-    for x, y, text in zip(results_by_model['Part-of-speech aligned accuracy'],
-                          results_by_model['Tokens per second'],
-                          results_by_model['Model']):
+                data=results_concatenated, s=80)
+    for x, y, text in zip(results_concatenated['Part-of-speech aligned accuracy'],
+                          results_concatenated['Tokens per second'],
+                          results_concatenated['Model']):
         ha = 'left' if text in label_left_pos else 'right'
         textrelx = 7 if ha == 'left' else -5
         plt.annotate(text, (x, y), xytext=(textrelx, 0), textcoords='offset points',
@@ -209,6 +210,13 @@ def main():
     plt.tight_layout()
     plt.savefig(imagedir / 'pos_acc_speed.png')
     plt.close()
+
+    # For comparing with the results published by Stanza, Trankit and Spacy
+    print('Results on UD_Finnish_TDT:')
+    ud_results = results_by_testset[results_by_testset['Dataset'] == 'UD_Finnish_TDT']
+    print(ud_results[['Model', 'Dataset', 'Part-of-speech F1', 'Lemmatization F1']]
+          .sort_values('Model')
+          .to_string(index=False))
 
 
 if __name__ == '__main__':
