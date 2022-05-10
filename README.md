@@ -66,7 +66,7 @@ and plots will be saved in results/images.
 
 ![Lemmatization speed](images/lemma_f1_speed.png)
 
-Execution duration as a function of the average (over datasets) F1 score. Larger values are better on both axes. Notice that the Y-axis is
+Execution duration as a function of the F1 score on the concatenated data. Larger values are better on both axes. Notice that the Y-axis is
 on log scale.
 
 The execution duration is measured as a batched evaluation (a batch
@@ -83,7 +83,7 @@ on the test datasets.
 
 ![Part-of-speech speed](images/pos_f1_speed.png)
 
-Execution duration as a function of the average POS F1 score.
+Execution duration as a function of the POS F1 score on the concatenated data.
 
 Note that FinnPos and Voikko do not make a distinction between
 auxiliary and main verbs and therefore their performance suffers by
