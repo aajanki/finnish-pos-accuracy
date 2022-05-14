@@ -15,6 +15,7 @@ source Finnish part-of-speech taggers and lemmatization algorihtms.
 * [UDPipe](http://ufal.mff.cuni.cz/udpipe) (through spacy-udpipe 1.0.0)
 * [UralicNLP](https://github.com/mikahama/uralicNLP) 1.3.0
 * [libvoikko](https://voikko.puimula.org/) 4.3.1 and Python voikko module 0.5
+* [Raudikko](https://github.com/EvidentSolutions/raudikko) git commit 572b8104 (Jan 2022)
 
 ### Test datasets
 
@@ -29,6 +30,7 @@ Install dependencies:
 * libvoikko with Finnish morphology data files
 * clang (or other C++ compiler)
 * Dependencies needed to compile [FinnPos](https://github.com/mpsilfve/FinnPos) and [cg3](https://github.com/GrammarSoft/cg3)
+* Java 11
 
 Setup git submodules, create a Python 3.9 (must be 3.9 because the Turku parser is incompatible with more recent Python versions) virtual environment and download test data and models by running the following commands:
 ```
@@ -45,6 +47,9 @@ pip install -r requirements.txt
 
 # Compile cg3 in models/cg3
 # See https://visl.sdu.dk/cg3/chunked/installation.html
+
+# Compile Raudikko
+(cd models/raudikko && ./gradlew shadowJar)
 
 ./download_data.sh
 ./download_models.sh

@@ -1,0 +1,25 @@
+plugins {
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'fi.evident.raudikko:raudikko:0.1.1'
+    implementation 'com.google.code.gson:gson:2.9.0'
+}
+
+application {
+    mainClass = 'RaudikkoPipeline.App'
+}
+
+run {
+    standardInput = System.in
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

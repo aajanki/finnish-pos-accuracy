@@ -1,3 +1,4 @@
+import json
 import re
 import subprocess
 import sys
@@ -11,6 +12,7 @@ import simplemma
 from itertools import zip_longest
 from voikko import libvoikko
 from uralicNLP.cg3 import Cg3
+from nltk.tokenize import wordpunct_tokenize
 
 inflection_postfix_re = re.compile(r'(.{2,}):\w{1,4}$')
 
@@ -47,29 +49,74 @@ class UDPipe:
             return system_sentence
 
 
+class VoikkoAnalysisParser:
+    tag_map = {
+        'nimisana': 'NOUN',
+        'laatusana': 'ADJ',
+        'nimisana_laatusana': 'ADJ',
+        'teonsana': 'VERB',
+        'seikkasana': 'ADV',
+        'asemosana': 'PRON',
+        'suhdesana': 'ADP',
+        'huudahdussana': 'INTJ',
+        'sidesana': 'CCONJ',
+        'etunimi': 'PROPN',
+        'sukunimi': 'PROPN',
+        'paikannimi': 'PROPN',
+        'nimi': 'PROPN',
+        'kieltosana': 'AUX',
+        'lyhenne': 'ADV',
+        'lukusana': 'NUM',
+        'etuliite': 'X'
+    }
+
+    @staticmethod
+    def analyzed_to_lemma(analyzed, orig):
+        if analyzed:
+            lemma, _ = VoikkoAnalysisParser._choose_baseform(analyzed, orig)
+        else:
+            lemma = inflection_postfix_re.sub(r'\1', orig)
+
+        return lemma
+
+    @staticmethod
+    def analyzed_to_pos_tag(analyzed, orig):
+        if analyzed:
+            baseform, word_class = VoikkoAnalysisParser._choose_baseform(analyzed, orig)
+            if baseform in ['olla', 'voida']:
+                tag = 'AUX'
+            else:
+                tag = VoikkoAnalysisParser.tag_map[word_class]
+        else:
+            if all(x in '.,?!:;()[]{}"”\'-+…' for x in orig):
+                tag = 'PUNCT'
+            elif orig.istitle() or orig.isupper():  # Name or acronym
+                tag = 'PROPN'
+            elif all(x.isdigit() or x.isspace() for x in orig):  # e.g. "50 000"
+                tag = 'NUM'
+            else:
+                tag = 'NOUN'  # This is a guess: the most common tag
+
+        return tag
+
+    @staticmethod
+    def _choose_baseform(analyzed, orig):
+        if not analyzed:
+            return (None, None)
+
+        try:
+            bases = [x.get('BASEFORM', '_').lower() for x in analyzed]
+            i = bases.index(orig.lower())
+        except ValueError:
+            i = 0
+
+        return (analyzed[i].get('BASEFORM', orig), analyzed[i].get('CLASS', 'X'))
+
+
 class Voikko:
     def __init__(self):
         self.name = 'voikko'
         self.voikko = None
-        self.tag_map = {
-            'nimisana': 'NOUN',
-            'laatusana': 'ADJ',
-            'nimisana_laatusana': 'ADJ',
-            'teonsana': 'VERB',
-            'seikkasana': 'ADV',
-            'asemosana': 'PRON',
-            'suhdesana': 'ADP',
-            'huudahdussana': 'INTJ',
-            'sidesana': 'CCONJ',
-            'etunimi': 'PROPN',
-            'sukunimi': 'PROPN',
-            'paikannimi': 'PROPN',
-            'nimi': 'PROPN',
-            'kieltosana': 'AUX',
-            'lyhenne': 'ADV',
-            'lukusana': 'NUM',
-            'etuliite': 'X'
-        }
         self.tokenizer_is_destructive = False
 
     def initialize(self):
@@ -84,8 +131,8 @@ class Voikko:
             for t in self.tokenize(text):
                 words.append(t)
                 analyzed = self.voikko.analyze(t)
-                lemmas.append(self.analyzed_to_lemma(analyzed, t))
-                pos.append(self.analyzed_to_pos_tag(analyzed, t))
+                lemmas.append(VoikkoAnalysisParser.analyzed_to_lemma(analyzed, t))
+                pos.append(VoikkoAnalysisParser.analyzed_to_pos_tag(analyzed, t))
             res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
         return res
 
@@ -95,44 +142,61 @@ class Voikko:
             if t.tokenTypeName != 'WHITESPACE'
         ]
 
-    def analyzed_to_lemma(self, analyzed, orig):
-        if analyzed:
-            lemma, _ = self._choose_baseform(analyzed, orig)
-        else:
-            lemma = inflection_postfix_re.sub(r'\1', orig)
 
-        return lemma
+class Raudikko:
+    def __init__(self):
+        self.name = 'raudikko'
+        self.raudikko = None
+        self.tokenizer_is_destructive = False
 
-    def analyzed_to_pos_tag(self, analyzed, orig):
-        if analyzed:
-            baseform, word_class = self._choose_baseform(analyzed, orig)
-            if baseform in ['olla', 'voida']:
-                tag = 'AUX'
+    def initialize(self):
+        args = [
+            'java', '-jar', 'models/raudikko/app/build/libs/app-all.jar'
+        ]
+        self.raudikko = subprocess.Popen(
+            args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            bufsize=1, universal_newlines=True,
+        )
+
+    def __del__(self):
+        if self.raudikko is not None:
+            self.raudikko.terminate()
+            self.raudikko.wait()
+            self.raudikko = None
+
+    def parse(self, texts):
+        res = []
+        for text in texts:
+            words = []
+            lemmas = []
+            pos = []
+            tokens = wordpunct_tokenize(text)
+            for token in tokens:
+                analyzed = self.analyze(token)
+                words.append(token)
+                lemmas.append(VoikkoAnalysisParser.analyzed_to_lemma(analyzed, token))
+                pos.append(VoikkoAnalysisParser.analyzed_to_pos_tag(analyzed, token))
+            res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
+        return res
+
+    def analyze(self, text):
+        self.raudikko.stdin.write(text + '\n')
+        self.raudikko.stdin.flush()
+        analysis_str = self.raudikko.stdout.readline().strip()
+        analysis = json.loads(analysis_str)
+        analysis = [self._fix_keys(x) for x in analysis]
+        return analysis
+
+    def _fix_keys(self, analysis):
+        fixed = {}
+        for key, val in analysis.items():
+            if key == 'wordClass':
+                key = 'CLASS'
             else:
-                tag = self.tag_map[word_class]
-        else:
-            if all(x in '.,?!:;()[]{}"”\'-+…' for x in orig):
-                tag = 'PUNCT'
-            elif orig.istitle() or orig.isupper(): # Name or acronym
-                tag = 'PROPN'
-            elif all(x.isdigit() or x.isspace() for x in orig): # 50 000
-                tag = 'NUM'
-            else:
-                tag = 'NOUN' # guess
+                key = key.upper()
+            fixed[key] = val
 
-        return tag
-
-    def _choose_baseform(self, analyzed, orig):
-        if not analyzed:
-            return (None, None)
-
-        try:
-            bases = [x.get('BASEFORM', '_').lower() for x in analyzed]
-            i = bases.index(orig.lower())
-        except ValueError:
-            i = 0
-
-        return (analyzed[i].get('BASEFORM', orig), analyzed[i].get('CLASS', 'X'))
+        return fixed
 
 
 class TurkuNeuralParser:
@@ -638,4 +702,5 @@ all_models = [
     Trankit('large'),
     Simplemma(),
     UralicNLP(),
+    Raudikko(),
 ]

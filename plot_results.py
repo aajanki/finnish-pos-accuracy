@@ -25,6 +25,7 @@ def main():
             'stanza': 'Stanza',
             'trankit': 'Trankit',
             'voikko': 'Voikko',
+            'raudikko': 'Raudikko',
         }))
     full_results = full_results.rename(columns={
         'UPOS F1': 'Part-of-speech F1',
@@ -145,7 +146,7 @@ def main():
     plt.savefig(imagedir / 'pos_f1.png')
     plt.close()
 
-    label_left_lemma = ['Stanza', 'simplemma', 'spacy-lg']
+    label_left_lemma = ['Stanza', 'simplemma', 'spacy-lg', 'Raudikko']
 
     sns.relplot(x='Lemmatization F1', y='Tokens per second',
                 data=results_concatenated, s=80)
@@ -162,7 +163,7 @@ def main():
     plt.savefig(imagedir / 'lemma_f1_speed.png')
     plt.close()
 
-    label_left_lemma = ['FinnPos', 'simplemma', 'spacy-lg']
+    label_left_lemma = ['FinnPos', 'simplemma', 'spacy-lg', 'Raudikko']
 
     sns.relplot(x='Lemmatization aligned accuracy', y='Tokens per second',
                 data=results_concatenated, s=80)
@@ -179,7 +180,7 @@ def main():
     plt.savefig(imagedir / 'lemma_acc_speed.png')
     plt.close()
 
-    label_left_pos = ['Voikko', 'Stanza', 'spacy-lg']
+    label_left_pos = ['Voikko', 'Raudikko', 'Stanza', 'spacy-lg']
 
     sns.relplot(x='Part-of-speech F1', y='Tokens per second',
                 data=results_concatenated, s=80)
