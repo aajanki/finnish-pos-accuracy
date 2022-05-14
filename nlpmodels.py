@@ -319,14 +319,13 @@ class TurkuNeuralParser:
 class FinnPos:
     def __init__(self):
         self.name = 'finnpos'
-        self.voikko = None
         self.tokenizer_is_destructive = False
 
     def initialize(self):
-        self.voikko = libvoikko.Voikko('fi')
+        pass
 
     def parse(self, texts):
-        token_lines = '\n\n'.join('\n'.join(self.tokenize(text)) for text in texts)
+        token_lines = '\n\n'.join('\n'.join(wordpunct_tokenize(text)) for text in texts)
         p = subprocess.run(['models/FinnPos/bin/ftb-label'], input=token_lines,
                            stdout=subprocess.PIPE, encoding='utf-8', check=True)
         sentences = p.stdout.split('\n\n')
@@ -355,12 +354,6 @@ class FinnPos:
             res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
 
         return res
-
-    def tokenize(self, text):
-        return [
-            t.tokenText for t in self.voikko.tokens(text)
-            if t.tokenTypeName != 'WHITESPACE'
-        ]
 
     def _finnpos_to_upos(self, tag):
         if tag.startswith('[POS=NOUN]') and '[PROPER=PROPER]' in tag:
@@ -571,12 +564,10 @@ class UralicNLP:
     def __init__(self):
         self.name = 'uralicnlp'
         self.cg = None
-        self.voikko = None
         self.tokenizer_is_destructive = True
 
     def initialize(self):
         self.cg = Cg3('fin')
-        self.voikko = libvoikko.Voikko('fi')
 
     def parse(self, texts):
         res = []
@@ -584,19 +575,13 @@ class UralicNLP:
             words = []
             lemmas = []
             pos = []
-            tokens = self.tokenize(text)
+            tokens = wordpunct_tokenize(text)
             for word, analyses in self.cg.disambiguate(tokens):
                 words.append(word)
                 lemmas.append(analyses[0].lemma)
                 pos.append(self._uralic_pos_to_upos(analyses[0].morphology))
             res.append({'texts': words, 'lemmas': lemmas, 'pos': pos})
         return res
-
-    def tokenize(self, text):
-        return [
-            t.tokenText for t in self.voikko.tokens(text)
-            if t.tokenTypeName != 'WHITESPACE'
-        ]
 
     def _uralic_pos_to_upos(self, morphology):
         if 'A' in morphology:
