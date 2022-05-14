@@ -60,7 +60,26 @@ def main():
         evaluation_results.append(metrics)
 
     df = pd.DataFrame(evaluation_results)
-    df.to_csv(outputdir / f'evaluation.csv', index=False)
+    output_file = outputdir / 'evaluation.csv'
+    df.to_csv(output_file, index=False)
+
+    print()
+    print('Summary of evaluations on the concatenated datasets:')
+    df2 = df[df['Dataset'] == 'concatenated']
+    print(df2[['Model', 'UPOS F1', 'Lemmatization F1', 'Tokens per second']]
+          .sort_values('Model')
+          .to_string(index=False))
+
+    print()
+    print('Summary on UD_Finnish_TDT:')
+    # For comparing with the results published by Stanza, Trankit and Spacy
+    df2 = df[df['Dataset'] == 'UD_Finnish_TDT']
+    print(df2[['Model', 'UPOS F1', 'Lemmatization F1', 'Tokens per second']]
+          .sort_values('Model')
+          .to_string(index=False))
+
+    print()
+    print(f'Full results written to {output_file}')
 
 
 def evaluate_model_files(gold_file, predictions_file, metadata_file):

@@ -212,13 +212,6 @@ def main():
     plt.savefig(imagedir / 'pos_acc_speed.png')
     plt.close()
 
-    # For comparing with the results published by Stanza, Trankit and Spacy
-    print('Results on UD_Finnish_TDT:')
-    ud_results = results_by_testset[results_by_testset['Dataset'] == 'UD_Finnish_TDT']
-    print(ud_results[['Model', 'Dataset', 'Part-of-speech F1', 'Lemmatization F1']]
-          .sort_values('Model')
-          .to_string(index=False))
-
 
 if __name__ == '__main__':
     main()
