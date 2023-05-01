@@ -16,7 +16,7 @@ nltk==3.7
 
 # Turku neural parser pipeline
 torch==1.11.0
-flask==2.1.1
+flask==2.3.2
 ufal.udpipe==1.2.0.3
 pyyaml==6.0
 configargparse==1.5.3
