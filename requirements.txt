@@ -20,7 +20,7 @@ flask==2.1.1
 ufal.udpipe==1.2.0.3
 pyyaml==6.0
 configargparse==1.5.3
-transformers==4.17.0
+transformers==4.30.0
 OpenNMT-py==2.2.0
 git+https://github.com/TurkuNLP/diaparser.git@7b8fab0
 pytorch_lightning==1.4.9
